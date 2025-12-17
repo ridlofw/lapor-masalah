@@ -34,6 +34,7 @@ interface DataTableProps<T> {
     searchKeys: (keyof T)[]
     initialPageSize?: number
     renderRowActions?: (item: T) => React.ReactNode
+    actions?: React.ReactNode
 }
 
 export function DataTable<T extends { id: string | number }>({
@@ -42,6 +43,7 @@ export function DataTable<T extends { id: string | number }>({
     searchKeys,
     initialPageSize = 10,
     renderRowActions,
+    actions,
 }: DataTableProps<T>) {
     // ... (state logic remains same)
     const [searchQuery, setSearchQuery] = useState("")
@@ -111,22 +113,25 @@ export function DataTable<T extends { id: string | number }>({
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="relative w-full md:w-72">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search..."
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value)
-                            setCurrentPage(1)
-                        }}
-                        className="pl-8"
-                    />
+                <div className="flex items-center gap-2 flex-wrap">
+                    <div className="relative w-full md:w-72">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value)
+                                setCurrentPage(1)
+                            }}
+                            className="pl-8"
+                        />
+                    </div>
+                    {actions}
                 </div>
             </div>
 
             <div className="relative w-full overflow-auto">
-                <Table>
+                <Table className="min-w-[1000px]">
                     <TableHeader>
                         <TableRow>
                             {columns.map((col) => (
