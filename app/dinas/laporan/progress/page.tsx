@@ -4,6 +4,7 @@ import { DataTable, ColumnDef } from "@/components/admin/DataTable"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { Wrench } from "lucide-react"
 
 // Dummy data to match the image
 const reports = [
@@ -103,18 +104,11 @@ export default function LaporanProgressPage() {
                 searchKeys={["id", "category", "location"]}
                 renderRowActions={(item) => (
                     <div className="flex items-center justify-end gap-2 text-sm">
-                        <Link
-                            href={`/dinas/laporan/progress/${item.id.replace('#', '')}`}
-                            className="text-blue-600 hover:text-blue-700 font-medium"
-                        >
-                            Detail
-                        </Link>
-                        <span className="text-gray-300">|</span>
-                        <Link
-                            href={`/dinas/laporan/progress/${item.id.replace('#', '')}/update`}
-                            className="text-blue-600 hover:text-blue-700 font-medium"
-                        >
-                            Update
+                        <Link href={`/dinas/laporan/progress/${item.id.replace('#', '')}`} passHref>
+                            <Button variant="ghost" size="icon" title="Update Progress">
+                                <span className="sr-only">Update Progress</span>
+                                <Wrench className="h-4 w-4 text-blue-600" />
+                            </Button>
                         </Link>
                     </div>
                 )}

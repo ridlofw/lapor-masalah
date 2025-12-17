@@ -4,13 +4,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, CheckCircle2, XCircle, MapPin, ThumbsUp, Wrench } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ArrowLeft, MapPin, ThumbsUp, Wrench, XCircle, DollarSign } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useState } from "react"
 import dynamic from "next/dynamic"
 import { SimpleAlertDialog } from "@/components/ui/simple-alert-dialog"
 import { ReportTimeline } from "@/components/report/ReportTimeline"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 const LocationPicker = dynamic(() => import("@/components/map/LocationPicker"), {
     ssr: false,
@@ -59,7 +62,11 @@ export default function DinasReportDetailPage() {
     const router = useRouter()
     const id = params.id as string
     const [activeImageIndex, setActiveImageIndex] = useState(0)
+
+    // Form States
     const [verificationNotes, setVerificationNotes] = useState("")
+    const [initialBudget, setInitialBudget] = useState("")
+    const [isVerifyOpen, setIsVerifyOpen] = useState(false)
 
     // State for logic
     // Initial status for Dinas is "Belum Diverifikasi" (meaning pending action from Dinas)
@@ -80,29 +87,21 @@ export default function DinasReportDetailPage() {
 
     const handleProcess = () => {
         if (!verificationNotes.trim()) {
-            setAlertConfig({
-                open: true,
-                title: "Catatan Diperlukan",
-                description: "Mohon isi catatan verifikasi sebelum memproses laporan.",
-                confirmText: "Mengerti",
-                variant: "default",
-                onConfirm: () => { }
-            })
+            // This check might be redundant if we use the Dialog validation visually, 
+            // but good for safety if we trigger this function manually.
             return
         }
 
-        setAlertConfig({
-            open: true,
-            title: "Verifikasi & Proses Laporan",
-            description: "Apakah Anda yakin ingin memproses laporan ini? Laporan akan dipindahkan ke status 'Dalam Pengerjaan'.",
-            confirmText: "Ya, Proses Laporan",
-            variant: "success",
-            onConfirm: () => {
-                setStatus("Dalam Pengerjaan")
-                // In a real app, API call here to update status and save notes
-                // router.push("/dinas/laporan/progress")
-            }
+        // Simulate API call
+        console.log("Processing Report:", {
+            id,
+            notes: verificationNotes,
+            budget: initialBudget
         })
+
+        setStatus("Dalam Pengerjaan")
+        setIsVerifyOpen(false)
+        // router.push("/dinas/laporan/progress")
     }
 
     const handleReject = () => {
@@ -294,13 +293,43 @@ export default function DinasReportDetailPage() {
                                             <XCircle className="mr-2 h-4 w-4" />
                                             Tolak
                                         </Button>
-                                        <Button
-                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                                            onClick={handleProcess}
-                                        >
-                                            <Wrench className="mr-2 h-4 w-4" />
-                                            Verifikasi & Proses
-                                        </Button>
+
+                                        <Dialog open={isVerifyOpen} onOpenChange={setIsVerifyOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                                                    <Wrench className="mr-2 h-4 w-4" />
+                                                    Verifikasi & Proses
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent>
+                                                <DialogHeader>
+                                                    <DialogTitle>Verifikasi & Tetapkan Anggaran</DialogTitle>
+                                                    <DialogDescription>
+                                                        Sebelum memproses, tentukan estimasi anggaran yang dibutuhkan untuk perbaikan ini.
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <div className="space-y-4 py-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Catatan Verifikasi</Label>
+                                                        <Textarea
+                                                            value={verificationNotes}
+                                                            onChange={(e) => setVerificationNotes(e.target.value)}
+                                                            className="bg-muted/50"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <DialogFooter>
+                                                    <Button variant="outline" onClick={() => setIsVerifyOpen(false)}>Batal</Button>
+                                                    <Button
+                                                        className="bg-blue-600 hover:bg-blue-700"
+                                                        onClick={handleProcess}
+                                                        disabled={!verificationNotes}
+                                                    >
+                                                        Konfirmasi & Proses
+                                                    </Button>
+                                                </DialogFooter>
+                                            </DialogContent>
+                                        </Dialog>
                                     </div>
                                 </>
                             ) : status === "Dalam Pengerjaan" ? (
