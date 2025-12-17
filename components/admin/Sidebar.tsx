@@ -2,27 +2,22 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { LayoutDashboard, FileText, Settings, LogOut, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
-const sidebarItems = [
-    {
-        title: "Dashboard",
-        href: "/admin/dashboard",
-        icon: LayoutDashboard,
-    },
-    {
-        title: "Laporan",
-        href: "/admin/laporan",
-        icon: FileText,
-    },
-]
+import { SimpleAlertDialog } from "@/components/ui/simple-alert-dialog"
 
 export function Sidebar({ className }: { className?: string }) {
     const pathname = usePathname()
+    const router = useRouter()
     const [isLaporanOpen, setIsLaporanOpen] = useState(pathname.startsWith("/admin/laporan"))
+    const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+
+    const handleLogout = () => {
+        document.cookie = "admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
+        router.push("/admin/login")
+    }
 
     return (
         <div className={cn("flex h-full flex-col bg-sidebar text-sidebar-foreground", className)}>
@@ -106,17 +101,31 @@ export function Sidebar({ className }: { className?: string }) {
             </div>
             <div className="mt-auto p-6 flex flex-col gap-2">
                 <Link
-                    href="/admin/settings"
+                    href="/admin/pengaturan"
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 >
                     <Settings className="h-4 w-4" />
-                    Settings
+                    Pengaturan
                 </Link>
-                <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10">
+                <button
+                    onClick={() => setShowLogoutDialog(true)}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                >
                     <LogOut className="h-4 w-4" />
                     Logout
                 </button>
             </div>
+
+            <SimpleAlertDialog
+                open={showLogoutDialog}
+                onOpenChange={setShowLogoutDialog}
+                title="Apakah Anda yakin?"
+                description="Anda akan keluar dari sesi admin saat ini. Anda perlu login kembali untuk mengakses halaman ini."
+                cancelText="Batal"
+                confirmText="Keluar"
+                onConfirm={handleLogout}
+                variant="destructive"
+            />
         </div>
     )
 }
