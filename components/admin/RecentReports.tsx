@@ -69,7 +69,7 @@ export function RecentReports() {
                     ))}
                 </div>
                 <div className="mt-6">
-                    <Link href="/admin/laporan" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+                    <Link href="/admin/laporan/belum-diverifikasi" className="text-sm font-medium text-blue-600 hover:text-blue-500">
                         Lihat semua laporan
                     </Link>
                 </div>
