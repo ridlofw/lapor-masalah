@@ -4,7 +4,6 @@ import { DataTable, ColumnDef } from "@/components/admin/DataTable"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Eye, Filter, Download } from "lucide-react"
 
 // Dummy data for Dinas view - can be shared or fetched
 const completedReports = [
@@ -56,29 +55,29 @@ type Report = typeof completedReports[0]
 
 const columns: ColumnDef<Report>[] = [
     {
+        key: "date",
+        header: "Tanggal",
+        sortable: true,
+    },
+    {
         key: "id",
-        header: "ID LAPORAN",
+        header: "ID Laporan",
         sortable: true,
         cell: (item) => <span className="font-medium">{item.id}</span>
     },
     {
         key: "category",
-        header: "KATEGORI",
+        header: "Kategori",
         sortable: true,
     },
     {
         key: "location",
-        header: "LOKASI",
-        sortable: true,
-    },
-    {
-        key: "date",
-        header: "TANGGAL SELESAI",
+        header: "Lokasi",
         sortable: true,
     },
     {
         key: "status",
-        header: "STATUS AKHIR",
+        header: "Status",
         cell: (item) => (
             <Badge
                 variant={item.status === "Selesai" ? "secondary" : "destructive"}
@@ -91,19 +90,6 @@ const columns: ColumnDef<Report>[] = [
 ]
 
 export default function DinasCompletedReportsPage() {
-    const actions = (
-        <>
-            <Button variant="outline" className="gap-2">
-                <Filter className="h-4 w-4" />
-                Filter
-            </Button>
-            <Button variant="outline" className="gap-2">
-                <Download className="h-4 w-4" />
-                Ekspor
-            </Button>
-        </>
-    )
-
     return (
         <div className="space-y-6">
             <div>
@@ -117,7 +103,6 @@ export default function DinasCompletedReportsPage() {
                 data={completedReports}
                 columns={columns}
                 searchKeys={["id", "category", "location"]}
-                actions={actions}
                 renderRowActions={(item) => (
                     <Link href={`/dinas/laporan/selesai/${item.id}`} passHref>
                         <Button variant="outline" size="sm">

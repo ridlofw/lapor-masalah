@@ -55,6 +55,11 @@ type Report = typeof unverifiedReports[0]
 
 const columns: ColumnDef<Report>[] = [
     {
+        key: "date",
+        header: "Tanggal",
+        sortable: true,
+    },
+    {
         key: "id",
         header: "ID Laporan",
         sortable: true,
@@ -68,11 +73,6 @@ const columns: ColumnDef<Report>[] = [
     {
         key: "location",
         header: "Lokasi",
-        sortable: true,
-    },
-    {
-        key: "date",
-        header: "Tanggal",
         sortable: true,
     },
     {

@@ -27,15 +27,15 @@ type Report = typeof progressReports[0]
 
 const columns: ColumnDef<Report>[] = [
     {
+        key: "date",
+        header: "Tanggal",
+        sortable: true,
+    },
+    {
         key: "id",
         header: "ID Laporan",
         sortable: true,
         cell: (item) => <span className="font-medium">#{item.id}</span>
-    },
-    {
-        key: "date",
-        header: "Tanggal",
-        sortable: true,
     },
     {
         key: "category",

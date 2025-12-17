@@ -70,7 +70,7 @@ export function DinasRecentReports() {
                     ))}
                 </div>
                 <div className="mt-6">
-                    <Link href="/dinas/laporan" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+                    <Link href="/dinas/laporan/belum-diverifikasi" className="text-sm font-medium text-blue-600 hover:text-blue-500">
                         Lihat semua laporan
                     </Link>
                 </div>

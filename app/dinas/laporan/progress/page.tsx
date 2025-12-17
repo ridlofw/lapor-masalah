@@ -54,29 +54,29 @@ type Report = typeof reports[0]
 
 const columns: ColumnDef<Report>[] = [
     {
+        key: "date",
+        header: "Tanggal",
+        sortable: true,
+    },
+    {
         key: "id",
-        header: "ID LAPORAN",
+        header: "ID Laporan",
         sortable: true,
         cell: (item) => <span className="font-medium">#{item.id.replace('#', '')}</span>
     },
     {
         key: "category",
-        header: "KATEGORI",
+        header: "Kategori",
         sortable: true,
     },
     {
         key: "location",
-        header: "LOKASI",
-        sortable: true,
-    },
-    {
-        key: "date",
-        header: "Tgl Mulai/Progress",
+        header: "Lokasi",
         sortable: true,
     },
     {
         key: "status",
-        header: "STATUS PROGRESS",
+        header: "Status",
         cell: (item) => (
             <Badge
                 variant="secondary"
