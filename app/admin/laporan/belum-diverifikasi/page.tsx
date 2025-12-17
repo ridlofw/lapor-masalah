@@ -2,8 +2,12 @@
 
 import { DataTable, ColumnDef } from "@/components/admin/DataTable"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Eye } from "lucide-react"
+import Link from "next/link"
 
 const unverifiedReports = [
+    // ... (keep data same)
     {
         id: "7281",
         category: "Jalan Rusak",
@@ -40,6 +44,8 @@ const unverifiedReports = [
         status: "Belum Diverifikasi",
     },
 ]
+
+// ... (keep rest same)
 
 type Report = typeof unverifiedReports[0]
 
@@ -90,6 +96,14 @@ export default function UnverifiedReportsPage() {
                 data={unverifiedReports}
                 columns={columns}
                 searchKeys={["id", "category", "location"]}
+                renderRowActions={(item) => (
+                    <Link href={`/admin/laporan/belum-diverifikasi/${item.id}`} passHref>
+                        <Button variant="ghost" size="icon" title="Lihat Detail">
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">Lihat Detail</span>
+                        </Button>
+                    </Link>
+                )}
             />
         </div>
     )

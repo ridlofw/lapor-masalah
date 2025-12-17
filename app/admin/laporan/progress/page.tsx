@@ -2,6 +2,9 @@
 
 import { DataTable, ColumnDef } from "@/components/admin/DataTable"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Eye } from "lucide-react"
 
 const progressReports = [
     {
@@ -69,6 +72,14 @@ export default function ProgressReportsPage() {
                 data={progressReports}
                 columns={columns}
                 searchKeys={["id", "category", "location"]}
+                renderRowActions={(item) => (
+                    <Link href={`/admin/laporan/progress/${item.id}`} passHref>
+                        <Button variant="ghost" size="icon" title="Lihat Detail">
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">Lihat Detail</span>
+                        </Button>
+                    </Link>
+                )}
             />
         </div>
     )

@@ -33,6 +33,7 @@ interface DataTableProps<T> {
     columns: ColumnDef<T>[]
     searchKeys: (keyof T)[]
     initialPageSize?: number
+    renderRowActions?: (item: T) => React.ReactNode
 }
 
 export function DataTable<T extends { id: string | number }>({
@@ -40,8 +41,9 @@ export function DataTable<T extends { id: string | number }>({
     columns,
     searchKeys,
     initialPageSize = 10,
+    renderRowActions,
 }: DataTableProps<T>) {
-    // State
+    // ... (state logic remains same)
     const [searchQuery, setSearchQuery] = useState("")
     const [pageSize, setPageSize] = useState(initialPageSize)
     const [currentPage, setCurrentPage] = useState(1)
@@ -83,8 +85,11 @@ export function DataTable<T extends { id: string | number }>({
         })
     }
 
+    // ... (render logic)
+
     return (
         <div className="rounded-md border bg-card text-card-foreground shadow-sm">
+            {/* Controls ... */}
             <div className="flex items-center justify-between p-4 flex-wrap gap-4">
                 <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Show</span>
@@ -161,10 +166,12 @@ export function DataTable<T extends { id: string | number }>({
                                         </TableCell>
                                     ))}
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                            <span className="sr-only">Menu</span>
-                                        </Button>
+                                        {renderRowActions ? renderRowActions(item) : (
+                                            <Button variant="ghost" size="icon">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                                <span className="sr-only">Menu</span>
+                                            </Button>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))
