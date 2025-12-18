@@ -11,6 +11,8 @@ import { useParams, useRouter } from "next/navigation"
 import { useState } from "react"
 import dynamic from "next/dynamic"
 import { SimpleAlertDialog } from "@/components/ui/simple-alert-dialog"
+import Image from "next/image"
+import { ZoomableImage } from "@/components/ui/zoomable-image"
 
 const LocationPicker = dynamic(() => import("@/components/map/LocationPicker"), {
     ssr: false,
@@ -23,9 +25,9 @@ const reportData = {
     date: "14 Agustus 2024",
     description: "Lubang besar di Jalan Merdeka No. 12, tepat di depan gerbang sekolah dasar, sangat membahayakan anak-anak dan pengendara. Kondisinya semakin parah saat hujan karena tergenang air dan tidak terlihat. Mohon segera diperbaiki untuk mencegah kecelakaan.",
     images: [
-        "/images/broken-road.jpg",
-        "/images/broken-road-2.jpg",
-        "/images/broken-road-3.jpg"
+        "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?q=80&w=2070&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1584463673574-896131336423?q=80&w=2069&auto=format&fit=crop",
+        "https://plus.unsplash.com/premium_photo-1663045625458-385075677d24?q=80&w=2070&auto=format&fit=crop"
     ],
     category: "Jalan",
     location: "Jl. Merdeka No. 12, Kel. Citarum, Kec. Bandung Wetan, Kota Bandung, Jawa Barat",
@@ -119,28 +121,32 @@ export default function ReportDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Left Column - Report Details (Takes up 2 columns) */}
                 <div className="md:col-span-2 space-y-6">
-                    <Card className="overflow-hidden">
+                    <Card className="overflow-hidden p-0 gap-0">
                         {/* Main Image */}
-                        <div className="relative h-[400px] w-full bg-muted">
-                            <div className="absolute inset-0 flex items-center justify-center bg-gray-200 text-gray-500 flex-col gap-2">
-                                <span className="text-lg">Image {activeImageIndex + 1} Placeholder</span>
-                                <span className="text-sm text-gray-400">(Would render: {reportData.images[activeImageIndex]})</span>
-                            </div>
+                        <div className="relative w-full aspect-video bg-muted border-b">
+                            <ZoomableImage
+                                src={reportData.images[activeImageIndex]}
+                                alt={`Report Image ${activeImageIndex + 1}`}
+                                className="w-full h-full"
+                            />
                         </div>
 
                         {/* Thumbnails */}
                         {reportData.images.length > 1 && (
-                            <div className="flex gap-2 p-4 overflow-x-auto border-b">
+                            <div className="flex gap-2 p-4 overflow-x-auto border-b bg-gray-50/50">
                                 {reportData.images.map((img, index) => (
                                     <button
                                         key={index}
                                         onClick={() => setActiveImageIndex(index)}
-                                        className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 transition-all ${index === activeImageIndex ? "border-primary" : "border-transparent opacity-70 hover:opacity-100"
+                                        className={`relative h-20 w-24 shrink-0 overflow-hidden rounded-md border-2 transition-all ${index === activeImageIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent opacity-70 hover:opacity-100"
                                             }`}
                                     >
-                                        <div className="h-full w-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
-                                            Img {index + 1}
-                                        </div>
+                                        <Image
+                                            src={img}
+                                            alt={`Thumbnail ${index + 1}`}
+                                            fill
+                                            className="object-cover"
+                                        />
                                     </button>
                                 ))}
                             </div>
@@ -209,15 +215,26 @@ export default function ReportDetailPage() {
                 {/* Right Column - Actions */}
                 <div className="space-y-6">
                     {/* Support Stats Card */}
-                    <Card className="border-border/60 shadow-sm bg-primary/5 border-primary/20">
-                        <CardContent className="p-6 flex items-center justify-between">
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-muted-foreground">Total Dukungan</p>
-                                <p className="text-3xl font-bold tracking-tight">{reportData.supportCount}</p>
-                                <p className="text-xs text-muted-foreground">Warga mendukung laporan ini</p>
-                            </div>
-                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                <ThumbsUp className="h-6 w-6" />
+                    <Card className="group bg-white border-slate-200 shadow-sm transition-all hover:border-blue-300 hover:shadow-md">
+                        <CardContent className="p-5">
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-slate-500">Total Dukungan</p>
+                                    <div className="flex items-baseline gap-2 mt-2">
+                                        <span className="text-4xl font-bold tracking-tight text-slate-900">
+                                            {reportData.supportCount}
+                                        </span>
+                                        <div className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">
+                                            Warga
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-2 max-w-[200px] leading-relaxed">
+                                        Mendukung agar laporan ini segera ditindaklanjuti.
+                                    </p>
+                                </div>
+                                <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                    <ThumbsUp className="h-5 w-5" />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -291,6 +308,7 @@ export default function ReportDetailPage() {
                                 disabled={status === "Ditolak"}
                                 onClick={handleDisposisi}
                             >
+                                <Send className="mr-2 h-4 w-4" />
                                 <Send className="mr-2 h-4 w-4" />
                                 Disposisi ke Dinas
                             </Button>
