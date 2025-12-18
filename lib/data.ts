@@ -9,10 +9,12 @@ export interface TimelineItem {
     status: "completed" | "in_progress" | "pending";
 }
 
+export type ReportCategory = "Jalan" | "Jembatan" | "Sekolah" | "Kesehatan" | "Air" | "Listrik";
+
 export interface Report {
     id: string;
     title: string;
-    category: string;
+    category: ReportCategory;
     date: string;
     location: string;
     fullAddress: string;
@@ -21,6 +23,7 @@ export interface Report {
     icon: LucideIcon;
     description: string;
     image: string; // URL to the main image
+    additionalImages?: string[];
     supportCount: number;
     timeline: TimelineItem[];
     budget: {
@@ -34,7 +37,7 @@ export const reports: Report[] = [
     {
         id: "1",
         title: "Jalan Rusak di Depan Balai Desa Ciptagelar",
-        category: "Infrastruktur Jalan",
+        category: "Jalan",
         date: "12 Okt 2023",
         location: "Desa Sukamaju, RW 05",
         fullAddress: "Desa Ciptagelar, Kab. Sukabumi",
@@ -43,6 +46,10 @@ export const reports: Report[] = [
         icon: Pickaxe,
         description: "Jalan rusak parah berlubang besar yang membahayakan pengendara motor, terutama saat hujan.",
         image: "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?q=80&w=2070&auto=format&fit=crop",
+        additionalImages: [
+            "https://images.unsplash.com/photo-1584463673574-896131336423?q=80&w=2069&auto=format&fit=crop",
+            "https://plus.unsplash.com/premium_photo-1663045625458-385075677d24?q=80&w=2070&auto=format&fit=crop"
+        ],
         supportCount: 342,
         budget: {
             total: "Rp 50.000.000",
@@ -90,7 +97,7 @@ export const reports: Report[] = [
     {
         id: "2",
         title: "Saluran Air Mampet Menyebabkan Banjir",
-        category: "Saluran Air Mampet",
+        category: "Air",
         date: "10 Okt 2023",
         location: "Pasar Lama, Blok C",
         fullAddress: "Pasar Lama, Blok C, Kota Bogor",
@@ -117,7 +124,7 @@ export const reports: Report[] = [
     {
         id: "3",
         title: "Lampu Jalan Mati di Perempatan",
-        category: "Lampu Jalan Mati",
+        category: "Listrik",
         date: "05 Okt 2023",
         location: "Jl. Merdeka No. 45",
         fullAddress: "Jl. Merdeka No. 45, Bandung",

@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Compass, FileText, LayoutDashboard, LogOut, Menu } from "lucide-react";
+import { Bell, Compass, FileText, LayoutDashboard, LogOut, Menu, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -12,9 +13,19 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth/AuthContext";
 
 export function Header() {
+    const { user, logout, isLoading } = useAuth();
     const pathname = usePathname();
 
     const isActive = (path: string) => pathname === path;
@@ -98,22 +109,39 @@ export function Header() {
                                 </Link>
                             </div>
 
-                            <div className="p-4 border-t bg-gray-50/30">
-                                <div className="flex items-center gap-3 px-2 mb-4">
-                                    <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-gray-100">
-                                        <AvatarImage src="/avatars/01.png" alt="Budi Santoso" />
-                                        <AvatarFallback className="bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 font-bold">BS</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="text-sm font-bold text-[#1e293b]">Budi Santoso</p>
-                                        <p className="text-xs text-muted-foreground">Masyarakat</p>
+                            {user ? (
+                                <div className="p-4 border-t bg-gray-50/30">
+                                    <div className="flex items-center gap-3 px-2 mb-4">
+                                        <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-gray-100">
+                                            <AvatarImage src={user.avatar} alt={user.name} />
+                                            <AvatarFallback className="bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 font-bold">
+                                                {user.name.substring(0, 2).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="text-sm font-bold text-[#1e293b]">{user.name}</p>
+                                            <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+                                        </div>
                                     </div>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100 justify-start gap-3 h-11 font-medium"
+                                        onClick={logout}
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                        Keluar Aplikasi
+                                    </Button>
                                 </div>
-                                <Button variant="outline" className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100 justify-start gap-3 h-11 font-medium">
-                                    <LogOut className="h-4 w-4" />
-                                    Keluar Aplikasi
-                                </Button>
-                            </div>
+                            ) : (
+                                <div className="p-4 border-t bg-gray-50/30 grid gap-3">
+                                    <Link href="/login" className="w-full">
+                                        <Button className="w-full bg-blue-600 hover:bg-blue-700">Masuk</Button>
+                                    </Link>
+                                    <Link href="/signup" className="w-full">
+                                        <Button variant="outline" className="w-full">Daftar</Button>
+                                    </Link>
+                                </div>
+                            )}
                         </SheetContent>
                     </Sheet>
 
@@ -179,21 +207,57 @@ export function Header() {
 
                 {/* User Profile */}
                 <div className="flex items-center gap-2 sm:gap-4">
-                    <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-gray-600">
-                        <Bell className="h-5 w-5" />
-                        <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-white"></span>
-                    </Button>
+                    {isLoading ? (
+                        <div className="h-8 w-8 animate-pulse bg-gray-200 rounded-full" />
+                    ) : user ? (
+                        <>
+                            <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-gray-600">
+                                <Bell className="h-5 w-5" />
+                                <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-white"></span>
+                            </Button>
 
-                    <div className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-gray-200">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-semibold text-[#1e293b]">Budi Santoso</p>
-                            <p className="text-xs text-gray-500">Masyarakat</p>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="p-0 hover:bg-transparent flex items-center gap-3 pl-2 sm:pl-4 border-l-0 sm:border-l border-gray-200 h-auto rounded-none">
+                                        <div className="text-right hidden sm:block">
+                                            <p className="text-sm font-semibold text-[#1e293b]">{user.name}</p>
+                                            <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                                        </div>
+                                        <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border border-gray-100 shadow-sm">
+                                            <AvatarImage src={user.avatar} alt={user.name} />
+                                            <AvatarFallback className="bg-orange-100 text-orange-600 font-bold text-xs sm:text-sm">
+                                                {user.name.substring(0, 2).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56" align="end" forceMount>
+                                    <DropdownMenuLabel className="font-normal">
+                                        <div className="flex flex-col space-y-1">
+                                            <p className="text-sm font-medium leading-none">{user.name}</p>
+                                            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                                        </div>
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
+                                        <LogOut className="mr-2 h-4 w-4" />
+                                        <span>Keluar Aplikasi</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </>
+                    ) : (
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                            <Link href="/login" className="hidden sm:block">
+                                <Button variant="ghost" className="text-gray-600 hover:text-blue-600">Masuk</Button>
+                            </Link>
+                            <Link href="/signup">
+                                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-200">
+                                    Daftar
+                                </Button>
+                            </Link>
                         </div>
-                        <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
-                            <AvatarImage src="/avatars/01.png" alt="Budi Santoso" />
-                            <AvatarFallback className="bg-orange-100 text-orange-600 font-bold text-xs sm:text-sm">BS</AvatarFallback>
-                        </Avatar>
-                    </div>
+                    )}
                 </div>
             </div>
         </header>
