@@ -20,8 +20,13 @@ import {
     X,
     Loader2,
     Image as ImageIcon,
-    Search
+    Search,
+    Lock,
+    LogIn
 } from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "@/components/auth/AuthContext";
+import { ZoomableImage } from "@/components/ui/zoomable-image";
 
 // Dynamic import with ssr: false to prevent hydration mismatch with Leaflet
 const LocationPicker = dynamic(() => import("@/components/map/LocationPicker"), {
@@ -35,6 +40,7 @@ const LocationPicker = dynamic(() => import("@/components/map/LocationPicker"), 
 
 export default function LaporPage() {
     const router = useRouter();
+    const { user, isLoading } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState<string>("Jalan");
     const [desc, setDesc] = useState("");
 
@@ -175,6 +181,14 @@ export default function LaporPage() {
         }
     }
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50/50 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50/50 pb-12">
             <Header />
@@ -191,194 +205,221 @@ export default function LaporPage() {
                     </p>
                 </div>
 
-                <Card className="border shadow-sm bg-white">
-                    <CardContent className="p-8 space-y-8">
-
-                        {/* Jenis Masalah */}
-                        <div className="space-y-4">
-                            <Label className="text-base">Apa jenis masalahnya? <span className="text-red-500">*</span></Label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                {categories.map((item) => (
-                                    <button
-                                        key={item.label}
-                                        type="button"
-                                        onClick={() => setSelectedCategory(item.label)}
-                                        className={`
-                      flex flex-col items-center justify-center gap-3 p-6 rounded-xl border transition-all duration-200
-                      ${selectedCategory === item.label
-                                                ? "border-blue-600 bg-blue-600 text-white shadow-md transform scale-[1.02]"
-                                                : "border-gray-200 hover:border-blue-200 hover:bg-gray-50 text-gray-600 bg-white"
-                                            }
-                    `}
-                                    >
-                                        <item.icon className={`h-6 w-6 ${selectedCategory === item.label ? "text-white" : "text-gray-500"}`} />
-                                        <span className="font-medium text-sm">{item.label}</span>
-                                    </button>
-                                ))}
-                            </div>
+                {!user ? (
+                    // GUEST STATE
+                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-gray-300 shadow-sm text-center px-4 animate-in fade-in zoom-in-95 duration-500">
+                        <div className="h-20 w-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                            <Lock className="h-10 w-10 text-blue-500" />
                         </div>
+                        <h2 className="text-2xl font-bold text-[#1e293b] mb-2">Login Diperlukan</h2>
+                        <p className="text-gray-500 max-w-md mb-8">
+                            Anda harus masuk terlebih dahulu untuk dapat mengirimkan laporan baru.
+                        </p>
+                        <div className="flex gap-4">
+                            <Link href="/login">
+                                <Button className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px] gap-2">
+                                    <LogIn className="h-4 w-4" />
+                                    Masuk
+                                </Button>
+                            </Link>
+                            <Link href="/signup">
+                                <Button variant="outline" className="min-w-[120px]">
+                                    Daftar Akun
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <Card className="border shadow-sm bg-white animate-in slide-in-from-bottom-5 fade-in duration-500">
+                            <CardContent className="p-8 space-y-8">
 
-                        <div className="grid md:grid-cols-2 gap-8">
-                            {/* Detail Masalah */}
-                            <div className="space-y-4">
-                                <Label className="text-base">Ceritakan detail masalahnya <span className="text-red-500">*</span></Label>
-                                <Textarea
-                                    placeholder="Contoh: Jalan berlubang sedalam 20cm di depan pasar, membahayakan pengendara motor..."
-                                    className="min-h-[200px] resize-none bg-gray-50/50 focus:bg-white transition-colors"
-                                    value={desc}
-                                    onChange={(e) => setDesc(e.target.value)}
-                                />
-                                <div className="text-xs text-right text-gray-400">{desc.length}/500</div>
-                            </div>
-
-                            {/* Bukti Foto (Multi-Upload) */}
-                            <div className="space-y-4">
-                                <Label className="text-base">Bukti Foto <span className="text-red-500">*</span></Label>
-
-                                {/* Upload Area */}
-                                <div
-                                    onClick={() => fileInputRef.current?.click()}
-                                    onDragOver={handleDragOver}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={handleDrop}
-                                    className={`
-                    relative border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200
-                    ${isDragging
-                                            ? "border-blue-500 bg-blue-50/50"
-                                            : "border-gray-200 bg-gray-50/50 hover:bg-gray-100/50 hover:border-blue-300"
-                                        }
-                    ${imagePreviews.length > 0 ? "h-32 mb-4" : "h-[200px]"}
-                  `}
-                                >
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        className="hidden"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={handleFileChange}
-                                    />
-                                    <div className="bg-white p-3 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform duration-200">
-                                        <Upload className="h-6 w-6 text-blue-500" />
-                                    </div>
-                                    <p className="text-sm font-medium text-blue-600 mb-1">
-                                        Klik untuk upload <span className="text-gray-500 text-sm font-normal">atau drag & drop</span>
-                                    </p>
-                                    <p className="text-xs text-gray-400">
-                                        PNG, JPG up to 5MB (Bisa lebih dari satu)
-                                    </p>
-                                </div>
-
-                                {/* Image Previews Grid */}
-                                {imagePreviews.length > 0 && (
-                                    <div className="grid grid-cols-3 gap-4">
-                                        {imagePreviews.map((src, index) => (
-                                            <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
-                                                <img
-                                                    src={src}
-                                                    alt={`Preview ${index + 1}`}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <Button
-                                                        variant="destructive"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-full"
-                                                        onClick={(e) => { e.stopPropagation(); removeImage(index); }}
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </div>
+                                {/* Jenis Masalah */}
+                                <div className="space-y-4">
+                                    <Label className="text-base">Apa jenis masalahnya? <span className="text-red-500">*</span></Label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {categories.map((item) => (
+                                            <button
+                                                key={item.label}
+                                                type="button"
+                                                onClick={() => setSelectedCategory(item.label)}
+                                                className={`
+                            flex flex-col items-center justify-center gap-3 p-6 rounded-xl border transition-all duration-200
+                            ${selectedCategory === item.label
+                                                        ? "border-blue-600 bg-blue-600 text-white shadow-md transform scale-[1.02]"
+                                                        : "border-gray-200 hover:border-blue-200 hover:bg-gray-50 text-gray-600 bg-white"
+                                                    }
+                            `}
+                                            >
+                                                <item.icon className={`h-6 w-6 ${selectedCategory === item.label ? "text-white" : "text-gray-500"}`} />
+                                                <span className="font-medium text-sm">{item.label}</span>
+                                            </button>
                                         ))}
                                     </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Lokasi */}
-                        <div className="space-y-4">
-                            <Label className="text-base">Dimana lokasi kejadian? <span className="text-red-500">*</span></Label>
-                            <div className="flex gap-3">
-                                <Button
-                                    variant="outline"
-                                    className="shrink-0 gap-2 h-11 bg-gray-50/50 dark:bg-gray-900/10 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors"
-                                    onClick={handleGetLocation}
-                                    disabled={isGettingLocation}
-                                >
-                                    {isGettingLocation ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <MapPin className="h-4 w-4" />
-                                    )}
-                                    <span className="hidden sm:inline">Lokasi Saya</span>
-                                </Button>
-                                <div className="relative flex-1 flex gap-2">
-                                    <div className="relative flex-1">
-                                        <MapPin className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            placeholder="Cari lokasi (Desa, Kecamatan, atau nama tempat)..."
-                                            className="pl-9 h-11 bg-gray-50/50 focus:bg-white transition-colors"
-                                            value={location}
-                                            onChange={(e) => setLocation(e.target.value)}
-                                            onKeyDown={handleKeyDown}
-                                        />
-                                    </div>
-                                    <Button
-                                        variant="secondary"
-                                        className="h-11 px-4"
-                                        onClick={handleSearchLocation}
-                                        disabled={isSearching}
-                                    >
-                                        {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                                    </Button>
                                 </div>
-                            </div>
 
-                            {/* LIVE Map Selection */}
-                            <div className="rounded-xl overflow-hidden border border-gray-200 h-80 bg-gray-50 relative z-0">
-                                <LocationPicker
-                                    center={coordinates}
-                                    onLocationSelect={handleLocationSelect}
-                                />
+                                <div className="grid md:grid-cols-2 gap-8">
+                                    {/* Detail Masalah */}
+                                    <div className="space-y-4">
+                                        <Label className="text-base">Ceritakan detail masalahnya <span className="text-red-500">*</span></Label>
+                                        <Textarea
+                                            placeholder="Contoh: Jalan berlubang sedalam 20cm di depan pasar, membahayakan pengendara motor..."
+                                            className="min-h-[200px] resize-none bg-gray-50/50 focus:bg-white transition-colors"
+                                            value={desc}
+                                            onChange={(e) => setDesc(e.target.value)}
+                                        />
+                                        <div className="text-xs text-right text-gray-400">{desc.length}/500</div>
+                                    </div>
 
-                                {!coordinates && (
-                                    <div className="absolute inset-0 bg-black/5 flex items-center justify-center pointer-events-none z-10 w-full h-full">
-                                        <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm text-sm text-gray-500">
-                                            Klik peta untuk memilih lokasi
+                                    {/* Bukti Foto (Multi-Upload) */}
+                                    <div className="space-y-4">
+                                        <Label className="text-base">Bukti Foto <span className="text-red-500">*</span></Label>
+
+                                        {/* Upload Area */}
+                                        <div
+                                            onClick={() => fileInputRef.current?.click()}
+                                            onDragOver={handleDragOver}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                            className={`
+                            relative border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200
+                            ${isDragging
+                                                    ? "border-blue-500 bg-blue-50/50"
+                                                    : "border-gray-200 bg-gray-50/50 hover:bg-gray-100/50 hover:border-blue-300"
+                                                }
+                            ${imagePreviews.length > 0 ? "h-32 mb-4" : "h-[200px]"}
+                        `}
+                                        >
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                className="hidden"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={handleFileChange}
+                                            />
+                                            <div className="bg-white p-3 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform duration-200">
+                                                <Upload className="h-6 w-6 text-blue-500" />
+                                            </div>
+                                            <p className="text-sm font-medium text-blue-600 mb-1">
+                                                Klik untuk upload <span className="text-gray-500 text-sm font-normal">atau drag & drop</span>
+                                            </p>
+                                            <p className="text-xs text-gray-400">
+                                                PNG, JPG up to 5MB (Bisa lebih dari satu)
+                                            </p>
+                                        </div>
+
+                                        {/* Image Previews Grid */}
+                                        {imagePreviews.length > 0 && (
+                                            <div className="grid grid-cols-3 gap-4">
+                                                {imagePreviews.map((src, index) => (
+                                                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
+                                                        <ZoomableImage
+                                                            src={src}
+                                                            alt={`Preview ${index + 1}`}
+                                                            className="w-full h-full"
+                                                        />
+                                                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="icon"
+                                                                className="h-6 w-6 rounded-full shadow-sm"
+                                                                onClick={(e) => { e.stopPropagation(); removeImage(index); }}
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Lokasi */}
+                                <div className="space-y-4">
+                                    <Label className="text-base">Dimana lokasi kejadian? <span className="text-red-500">*</span></Label>
+                                    <div className="flex gap-3">
+                                        <Button
+                                            variant="outline"
+                                            className="shrink-0 gap-2 h-11 bg-gray-50/50 dark:bg-gray-900/10 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors"
+                                            onClick={handleGetLocation}
+                                            disabled={isGettingLocation}
+                                        >
+                                            {isGettingLocation ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <MapPin className="h-4 w-4" />
+                                            )}
+                                            <span className="hidden sm:inline">Lokasi Saya</span>
+                                        </Button>
+                                        <div className="relative flex-1 flex gap-2">
+                                            <div className="relative flex-1">
+                                                <MapPin className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
+                                                <Input
+                                                    placeholder="Cari lokasi (Desa, Kecamatan, atau nama tempat)..."
+                                                    className="pl-9 h-11 bg-gray-50/50 focus:bg-white transition-colors"
+                                                    value={location}
+                                                    onChange={(e) => setLocation(e.target.value)}
+                                                    onKeyDown={handleKeyDown}
+                                                />
+                                            </div>
+                                            <Button
+                                                variant="secondary"
+                                                className="h-11 px-4"
+                                                onClick={handleSearchLocation}
+                                                disabled={isSearching}
+                                            >
+                                                {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                            </Button>
                                         </div>
                                     </div>
-                                )}
-                            </div>
+
+                                    {/* LIVE Map Selection */}
+                                    <div className="rounded-xl overflow-hidden border border-gray-200 h-80 bg-gray-50 relative z-0">
+                                        <LocationPicker
+                                            center={coordinates}
+                                            onLocationSelect={handleLocationSelect}
+                                        />
+
+                                        {!coordinates && (
+                                            <div className="absolute inset-0 bg-black/5 flex items-center justify-center pointer-events-none z-10 w-full h-full">
+                                                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm text-sm text-gray-500">
+                                                    Klik peta untuk memilih lokasi
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="pt-4 flex items-center justify-end gap-4">
+                                    <Button
+                                        variant="ghost"
+                                        className="text-gray-500 hover:text-gray-700 h-11 px-8"
+                                        onClick={() => router.push("/laporan-saya")}
+                                    >
+                                        Batal
+                                    </Button>
+                                    <Button
+                                        className="bg-blue-600 hover:bg-blue-700 text-white h-11 px-8 shadow-sm shadow-blue-200 transition-all hover:shadow-blue-300 hover:-translate-y-0.5"
+                                        onClick={() => router.push("/laporan-saya")}
+                                    >
+                                        Kirim Laporan
+                                    </Button>
+                                </div>
+
+                            </CardContent>
+                        </Card>
+
+                        <div className="text-center text-xs text-gray-400 flex items-center justify-center gap-2">
+                            <span className="h-3 w-3 rounded-full bg-gray-200 flex items-center justify-center">
+                                <span className="h-2 w-2 rounded-full bg-gray-400" />
+                            </span>
+                            Data Anda aman dan akan diverifikasi oleh tim kami.
                         </div>
-
-                        {/* Actions */}
-                        <div className="pt-4 flex items-center justify-end gap-4">
-                            <Button
-                                variant="ghost"
-                                className="text-gray-500 hover:text-gray-700 h-11 px-8"
-                                onClick={() => router.push("/laporan-saya")}
-                            >
-                                Batal
-                            </Button>
-                            <Button
-                                className="bg-blue-600 hover:bg-blue-700 text-white h-11 px-8 shadow-sm shadow-blue-200 transition-all hover:shadow-blue-300 hover:-translate-y-0.5"
-                                onClick={() => router.push("/laporan-saya")}
-                            >
-                                Kirim Laporan
-                            </Button>
-                        </div>
-
-                    </CardContent>
-                </Card>
-
-                <div className="text-center text-xs text-gray-400 flex items-center justify-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="h-2 w-2 rounded-full bg-gray-400" />
-                    </span>
-                    Data Anda aman dan akan diverifikasi oleh tim kami.
-                </div>
-
+                    </>
+                )}
             </main>
         </div>
     );

@@ -7,6 +7,7 @@ import { Report } from "@/lib/data";
 import { Calendar, MapPin, Share2, ThumbsUp } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { ZoomableImage } from "@/components/ui/zoomable-image";
 
 interface ReportInfoProps {
     report: Report;
@@ -15,6 +16,10 @@ interface ReportInfoProps {
 export function ReportInfo({ report }: ReportInfoProps) {
     const [isSupported, setIsSupported] = useState(false);
     const [count, setCount] = useState(report.supportCount);
+
+    // Combine main image with additional images
+    const allImages = [report.image, ...(report.additionalImages || [])];
+    const [selectedImage, setSelectedImage] = useState(allImages[0]);
 
     const handleSupport = () => {
         if (isSupported) {
@@ -28,14 +33,34 @@ export function ReportInfo({ report }: ReportInfoProps) {
 
     return (
         <div className="space-y-6">
-            <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-gray-100 border border-gray-100">
-                <Image
-                    src={report.image}
+            <div className="space-y-4">
+                {/* Main View */}
+                <ZoomableImage
+                    src={selectedImage}
                     alt={report.title}
-                    fill
-                    className="object-cover"
-                    priority
+                    className="rounded-xl bg-gray-100 border border-gray-100"
                 />
+
+                {/* Thumbnails */}
+                {allImages.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-200">
+                        {allImages.map((img, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setSelectedImage(img)}
+                                className={`relative h-20 w-32 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${selectedImage === img ? "border-blue-600 ring-2 ring-blue-100" : "border-transparent hover:border-gray-200"
+                                    }`}
+                            >
+                                <Image
+                                    src={img}
+                                    alt={`View ${idx + 1}`}
+                                    fill
+                                    className="object-cover"
+                                />
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div>
@@ -94,8 +119,8 @@ export function ReportInfo({ report }: ReportInfoProps) {
                         <Button
                             onClick={handleSupport}
                             className={`flex-1 shadow-lg transition-all ${isSupported
-                                    ? "bg-blue-800 hover:bg-blue-900 text-white shadow-blue-800/20"
-                                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20"
+                                ? "bg-blue-800 hover:bg-blue-900 text-white shadow-blue-800/20"
+                                : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20"
                                 }`}
                         >
                             <ThumbsUp className={`w-4 h-4 mr-2 ${isSupported ? "fill-current" : ""}`} />

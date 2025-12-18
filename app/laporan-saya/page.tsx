@@ -33,14 +33,18 @@ import {
     ChevronLeft,
     ChevronRight,
     Filter,
+    Lock,
+    LogIn
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthContext";
 
 // Mock Data
 const INITIAL_REPORTS = [
     {
         id: "#LM-2023-001",
-        category: "Jalan Rusak",
+        category: "Jalan",
         location: "Desa Suka Maju, NTT",
         date: "2023-10-12",
         status: "Diproses",
@@ -48,7 +52,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-002",
-        category: "Listrik Mati",
+        category: "Listrik",
         location: "Desa Won Raba, NTT",
         date: "2023-10-10",
         status: "Selesai",
@@ -56,7 +60,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-003",
-        category: "Jembatan Roboh",
+        category: "Jembatan",
         location: "Kec. Alor, NTT",
         date: "2023-10-05",
         status: "Menunggu",
@@ -64,7 +68,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-004",
-        category: "Air Bersih",
+        category: "Air",
         location: "Desa Bena, NTT",
         date: "2023-10-01",
         status: "Selesai",
@@ -72,7 +76,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-005",
-        category: "Sekolah Rusak",
+        category: "Sekolah",
         location: "Pulau Rote, NTT",
         date: "2023-09-28",
         status: "Diproses",
@@ -80,7 +84,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-006",
-        category: "Jalan Rusak",
+        category: "Jalan",
         location: "Desa Oeteta, NTT",
         date: "2023-09-25",
         status: "Menunggu",
@@ -88,7 +92,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-007",
-        category: "Air Bersih",
+        category: "Air",
         location: "Desa Mamboro, NTT",
         date: "2023-09-20",
         status: "Selesai",
@@ -96,7 +100,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-008",
-        category: "Listrik Mati",
+        category: "Listrik",
         location: "Desa Baumata, NTT",
         date: "2023-09-18",
         status: "Diproses",
@@ -104,7 +108,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-009",
-        category: "Jalan Rusak",
+        category: "Jalan",
         location: "Kota Kupang, NTT",
         date: "2023-09-15",
         status: "Selesai",
@@ -112,7 +116,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-010",
-        category: "Sekolah Rusak",
+        category: "Sekolah",
         location: "Kab. TTS, NTT",
         date: "2023-09-10",
         status: "Menunggu",
@@ -120,7 +124,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-011",
-        category: "Jembatan Roboh",
+        category: "Jembatan",
         location: "Kab. TTU, NTT",
         date: "2023-09-05",
         status: "Selesai",
@@ -128,7 +132,7 @@ const INITIAL_REPORTS = [
     },
     {
         id: "#LM-2023-012",
-        category: "Air Bersih",
+        category: "Air",
         location: "Kab. Belu, NTT",
         date: "2023-09-01",
         status: "Diproses",
@@ -141,10 +145,9 @@ type SortConfig = {
     direction: 'asc' | 'desc';
 };
 
-import { useRouter } from "next/navigation";
-
 export default function LaporanSaya() {
     const router = useRouter();
+    const { user, isLoading } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -208,6 +211,14 @@ export default function LaporanSaya() {
         return new Date(dateString).toLocaleDateString('id-ID', options);
     };
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50/50 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50/50">
             <Header />
@@ -232,213 +243,243 @@ export default function LaporanSaya() {
                     </Link>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid gap-6 md:grid-cols-3">
-                    <StatsCard
-                        title="TOTAL LAPORAN"
-                        value="12"
-                        icon={Folder}
-                        iconClassName="text-gray-400"
-                    />
-                    <StatsCard
-                        title="DIPROSES"
-                        value="5"
-                        icon={Loader2}
-                        iconClassName="text-blue-500"
-                        valueClassName="text-blue-500"
-                    />
-                    <StatsCard
-                        title="SELESAI"
-                        value="7"
-                        icon={CheckCircle2}
-                        iconClassName="text-green-500"
-                        valueClassName="text-green-500"
-                    />
-                </div>
-
-                {/* Filters and Table */}
-                <div className="space-y-4">
-                    {/* Filters */}
-                    <div className="bg-white rounded-xl border shadow-sm p-1.5 flex flex-col md:flex-row items-center gap-2">
-                        <div className="relative flex-1 w-full">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <Input
-                                placeholder="Cari ID Laporan atau Lokasi..."
-                                className="pl-9 border-0 bg-transparent shadow-none focus-visible:ring-0 h-10 w-full"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                {!user ? (
+                    // GUEST STATE
+                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-gray-300 shadow-sm text-center px-4 animate-in fade-in zoom-in-95 duration-500">
+                        <div className="h-20 w-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                            <Lock className="h-10 w-10 text-blue-500" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-[#1e293b] mb-2">Akses Terbatas</h2>
+                        <p className="text-gray-500 max-w-md mb-8">
+                            Anda perlu masuk ke akun Anda untuk melihat riwayat laporan yang pernah Anda kirimkan.
+                        </p>
+                        <div className="flex gap-4">
+                            <Link href="/login">
+                                <Button className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px] gap-2">
+                                    <LogIn className="h-4 w-4" />
+                                    Masuk
+                                </Button>
+                            </Link>
+                            <Link href="/signup">
+                                <Button variant="outline" className="min-w-[120px]">
+                                    Daftar Akun
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+                ) : (
+                    // LOGGED IN STATE
+                    <>
+                        {/* Stats Cards */}
+                        <div className="grid gap-6 md:grid-cols-3">
+                            <StatsCard
+                                title="TOTAL LAPORAN"
+                                value="12"
+                                icon={Folder}
+                                iconClassName="text-gray-400"
+                            />
+                            <StatsCard
+                                title="DIPROSES"
+                                value="5"
+                                icon={Loader2}
+                                iconClassName="text-blue-500"
+                                valueClassName="text-blue-500"
+                            />
+                            <StatsCard
+                                title="SELESAI"
+                                value="7"
+                                icon={CheckCircle2}
+                                iconClassName="text-green-500"
+                                valueClassName="text-green-500"
                             />
                         </div>
 
-                        {/* Divider */}
-                        <div className="hidden md:block h-8 w-px bg-gray-200 mx-2" />
-
-                        <div className="w-full md:w-auto min-w-[200px]">
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="border-0 shadow-none bg-transparent focus:ring-0 h-10 gap-2 hover:bg-gray-50/50 transition-colors">
-                                    <div className="flex items-center gap-2 text-gray-500">
-                                        <Filter className="h-4 w-4" />
-                                        <span className="text-sm font-medium">Status:</span>
-                                    </div>
-                                    <SelectValue placeholder="Semua" />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    <SelectItem value="all" className="cursor-pointer">Semua Status</SelectItem>
-                                    <SelectItem value="menunggu" className="cursor-pointer">Menunggu</SelectItem>
-                                    <SelectItem value="diproses" className="cursor-pointer">Diproses</SelectItem>
-                                    <SelectItem value="selesai" className="cursor-pointer">Selesai</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Table */}
-                    <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-                        <Table>
-                            <TableHeader className="bg-gray-50/50">
-                                <TableRow>
-                                    <TableHead
-                                        className="w-[180px] font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
-                                        onClick={() => handleSort('id')}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            ID Laporan
-                                            <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                                        </div>
-                                    </TableHead>
-                                    <TableHead
-                                        className="font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
-                                        onClick={() => handleSort('category')}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            Kategori
-                                            <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                                        </div>
-                                    </TableHead>
-                                    <TableHead
-                                        className="font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
-                                        onClick={() => handleSort('location')}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            Lokasi
-                                            <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                                        </div>
-                                    </TableHead>
-                                    <TableHead
-                                        className="font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
-                                        onClick={() => handleSort('date')}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            Tanggal
-                                            <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                                        </div>
-                                    </TableHead>
-                                    <TableHead className="font-semibold text-[#1e293b]">Status</TableHead>
-                                    <TableHead className="text-right font-semibold text-[#1e293b]">Aksi</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {paginatedData.length > 0 ? (
-                                    paginatedData.map((report) => (
-                                        <TableRow key={report.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <TableCell className="font-medium text-gray-600">
-                                                {report.id}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2 text-[#1e293b]">
-                                                    {report.category === "Jalan Rusak" || report.category === "Jembatan Roboh" ? <div className="h-2 w-2 rounded-full bg-red-400" /> :
-                                                        report.category === "Listrik Mati" ? <div className="h-2 w-2 rounded-full bg-yellow-400" /> :
-                                                            report.category === "Air Bersih" ? <div className="h-2 w-2 rounded-full bg-blue-400" /> :
-                                                                <div className="h-2 w-2 rounded-full bg-gray-400" />
-                                                    }
-                                                    {report.category}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-gray-600">{report.location}</TableCell>
-                                            <TableCell className="text-gray-600">{formatDate(report.date)}</TableCell>
-                                            <TableCell>
-                                                <Badge
-                                                    variant="secondary"
-                                                    className={`${report.statusColor} font-medium border-0 px-3 py-1`}
-                                                >
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                                                        {report.status}
-                                                    </div>
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 gap-1"
-                                                    onClick={() => router.push(`/laporan/${report.id}`)}
-                                                >
-                                                    Detail
-                                                    <ArrowRight className="h-3 w-3" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center">
-                                            Tidak ada data laporan yang ditemukan.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-
-                        {/* Pagination Footer */}
-                        <div className="border-t p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-gray-50/30">
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <span>Menampilkan</span>
-                                <Select
-                                    value={rowsPerPage.toString()}
-                                    onValueChange={(val) => {
-                                        setRowsPerPage(Number(val));
-                                        setCurrentPage(1); // Reset to first page
-                                    }}
-                                >
-                                    <SelectTrigger className="h-8 w-[70px] bg-white border-gray-200">
-                                        <SelectValue placeholder={rowsPerPage} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="5">5</SelectItem>
-                                        <SelectItem value="10">10</SelectItem>
-                                        <SelectItem value="50">50</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <span>dari <span className="font-medium text-[#1e293b]">{filteredData.length}</span> hasil</span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <div className="text-sm font-medium text-[#1e293b]">
-                                    Hal. {currentPage} dari {Math.max(totalPages, 1)}
+                        {/* Filters and Table */}
+                        <div className="space-y-4">
+                            {/* Filters */}
+                            <div className="bg-white rounded-xl border shadow-sm p-1.5 flex flex-col md:flex-row items-center gap-2">
+                                <div className="relative flex-1 w-full">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        placeholder="Cari ID Laporan atau Lokasi..."
+                                        className="pl-9 border-0 bg-transparent shadow-none focus-visible:ring-0 h-10 w-full"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
-                                    disabled={currentPage === totalPages || totalPages === 0}
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
+
+                                {/* Divider */}
+                                <div className="hidden md:block h-8 w-px bg-gray-200 mx-2" />
+
+                                <div className="w-full md:w-auto min-w-[200px]">
+                                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                        <SelectTrigger className="border-0 shadow-none bg-transparent focus:ring-0 h-10 gap-2 hover:bg-gray-50/50 transition-colors">
+                                            <div className="flex items-center gap-2 text-gray-500">
+                                                <Filter className="h-4 w-4" />
+                                                <span className="text-sm font-medium">Status:</span>
+                                            </div>
+                                            <SelectValue placeholder="Semua" />
+                                        </SelectTrigger>
+                                        <SelectContent align="end">
+                                            <SelectItem value="all" className="cursor-pointer">Semua Status</SelectItem>
+                                            <SelectItem value="menunggu" className="cursor-pointer">Menunggu</SelectItem>
+                                            <SelectItem value="diproses" className="cursor-pointer">Diproses</SelectItem>
+                                            <SelectItem value="selesai" className="cursor-pointer">Selesai</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Table */}
+                            <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+                                <Table>
+                                    <TableHeader className="bg-gray-50/50">
+                                        <TableRow>
+                                            <TableHead
+                                                className="w-[180px] font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
+                                                onClick={() => handleSort('id')}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    ID Laporan
+                                                    <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                                                </div>
+                                            </TableHead>
+                                            <TableHead
+                                                className="font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
+                                                onClick={() => handleSort('category')}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    Kategori
+                                                    <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                                                </div>
+                                            </TableHead>
+                                            <TableHead
+                                                className="font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
+                                                onClick={() => handleSort('location')}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    Lokasi
+                                                    <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                                                </div>
+                                            </TableHead>
+                                            <TableHead
+                                                className="font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
+                                                onClick={() => handleSort('date')}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    Tanggal
+                                                    <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                                                </div>
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-[#1e293b]">Status</TableHead>
+                                            <TableHead className="text-right font-semibold text-[#1e293b]">Aksi</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {paginatedData.length > 0 ? (
+                                            paginatedData.map((report) => (
+                                                <TableRow key={report.id} className="hover:bg-gray-50/50 transition-colors">
+                                                    <TableCell className="font-medium text-gray-600">
+                                                        {report.id}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-2 text-[#1e293b]">
+                                                            {report.category === "Jalan" || report.category === "Jembatan" ? <div className="h-2 w-2 rounded-full bg-red-400" /> :
+                                                                report.category === "Listrik" ? <div className="h-2 w-2 rounded-full bg-yellow-400" /> :
+                                                                    report.category === "Air" ? <div className="h-2 w-2 rounded-full bg-blue-400" /> :
+                                                                        report.category === "Sekolah" || report.category === "Kesehatan" ? <div className="h-2 w-2 rounded-full bg-green-400" /> :
+                                                                            <div className="h-2 w-2 rounded-full bg-gray-400" />
+                                                            }
+                                                            {report.category}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-gray-600">{report.location}</TableCell>
+                                                    <TableCell className="text-gray-600">{formatDate(report.date)}</TableCell>
+                                                    <TableCell>
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className={`${report.statusColor} font-medium border-0 px-3 py-1`}
+                                                        >
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                                                                {report.status}
+                                                            </div>
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 gap-1"
+                                                            onClick={() => router.push(`/laporan/${report.id}`)}
+                                                        >
+                                                            Detail
+                                                            <ArrowRight className="h-3 w-3" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="h-24 text-center">
+                                                    Tidak ada data laporan yang ditemukan.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+
+                                {/* Pagination Footer */}
+                                <div className="border-t p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-gray-50/30">
+                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                        <span>Menampilkan</span>
+                                        <Select
+                                            value={rowsPerPage.toString()}
+                                            onValueChange={(val) => {
+                                                setRowsPerPage(Number(val));
+                                                setCurrentPage(1); // Reset to first page
+                                            }}
+                                        >
+                                            <SelectTrigger className="h-8 w-[70px] bg-white border-gray-200">
+                                                <SelectValue placeholder={rowsPerPage} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="5">5</SelectItem>
+                                                <SelectItem value="10">10</SelectItem>
+                                                <SelectItem value="50">50</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <span>dari <span className="font-medium text-[#1e293b]">{filteredData.length}</span> hasil</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        >
+                                            <ChevronLeft className="h-4 w-4" />
+                                        </Button>
+                                        <div className="text-sm font-medium text-[#1e293b]">
+                                            Hal. {currentPage} dari {Math.max(totalPages, 1)}
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            disabled={currentPage === totalPages || totalPages === 0}
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        >
+                                            <ChevronRight className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </main>
         </div>
     );

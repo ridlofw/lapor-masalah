@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TimelineItem } from "@/lib/data";
 import { CheckCircle2, Clock, FileText, Send } from "lucide-react";
 import Image from "next/image";
+import { ZoomableImage } from "@/components/ui/zoomable-image";
 
 interface ReportTimelineProps {
     timeline: TimelineItem[];
@@ -58,14 +59,12 @@ export function ReportTimeline({ timeline }: ReportTimelineProps) {
                                     {item.images && item.images.length > 0 && (
                                         <div className="mt-3 grid grid-cols-2 gap-2">
                                             {item.images.map((img, i) => (
-                                                <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-gray-100">
-                                                    <Image
-                                                        src={img}
-                                                        alt={`Evidence ${i}`}
-                                                        fill
-                                                        className="object-cover"
-                                                    />
-                                                </div>
+                                                <ZoomableImage
+                                                    key={i}
+                                                    src={img}
+                                                    alt={`Evidence ${i}`}
+                                                    className="rounded-lg border border-gray-100"
+                                                />
                                             ))}
                                         </div>
                                     )}
