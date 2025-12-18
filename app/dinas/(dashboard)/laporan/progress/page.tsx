@@ -18,7 +18,7 @@ const reports = [
     },
     {
         id: "LP20231003",
-        category: "Irigasi",
+        category: "Air",
         location: "Desa Makmur Jaya",
         date: "18 Okt 2023",
         status: "Pengerjaan Material",
@@ -26,7 +26,7 @@ const reports = [
     },
     {
         id: "LP20230928",
-        category: "Jalan Raya",
+        category: "Jalan",
         location: "Jl. Merdeka No. 12",
         date: "15 Okt 2023",
         status: "Pengerjaan Fisik",
@@ -34,7 +34,7 @@ const reports = [
     },
     {
         id: "LP20230925",
-        category: "Gedung Sekolah",
+        category: "Sekolah",
         location: "SDN 01 Harapan Bangsa",
         date: "12 Okt 2023",
         status: "Pengerjaan Fisik",
