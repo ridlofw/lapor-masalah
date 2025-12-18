@@ -11,6 +11,8 @@ import dynamic from "next/dynamic"
 import { ReportTimeline } from "@/components/report/ReportTimeline"
 import { BudgetTransparency } from "@/components/report/BudgetTransparency"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import Image from "next/image"
+import { ZoomableImage } from "@/components/ui/zoomable-image"
 
 const LocationPicker = dynamic(() => import("@/components/map/LocationPicker"), {
     ssr: false,
@@ -152,29 +154,32 @@ export default function CompletedReportDetailPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column - Report Details */}
                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="overflow-hidden border-border/60 shadow-sm">
+                    <Card className="overflow-hidden border-border/60 shadow-sm p-0 gap-0">
                         {/* Main Image */}
-                        <div className="relative h-[400px] w-full bg-muted">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                        <div className="relative w-full aspect-video bg-muted border-b">
+                            <ZoomableImage
                                 src={reportData.images[activeImageIndex]}
                                 alt={`Report Image ${activeImageIndex + 1}`}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full"
                             />
                         </div>
 
                         {/* Thumbnails */}
                         {reportData.images.length > 1 && (
-                            <div className="flex gap-2 p-4 overflow-x-auto border-b">
+                            <div className="flex gap-2 p-4 overflow-x-auto border-b bg-gray-50/50">
                                 {reportData.images.map((img: string, index: number) => (
                                     <button
                                         key={index}
                                         onClick={() => setActiveImageIndex(index)}
-                                        className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 transition-all ${index === activeImageIndex ? "border-primary" : "border-transparent opacity-70 hover:opacity-100"
+                                        className={`relative h-20 w-24 shrink-0 overflow-hidden rounded-md border-2 transition-all ${index === activeImageIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent opacity-70 hover:opacity-100"
                                             }`}
                                     >
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={img} alt={`Thumbnail ${index + 1}`} className="h-full w-full object-cover" />
+                                        <Image
+                                            src={img}
+                                            alt={`Thumbnail ${index + 1}`}
+                                            fill
+                                            className="object-cover"
+                                        />
                                     </button>
                                 ))}
                             </div>
@@ -240,15 +245,26 @@ export default function CompletedReportDetailPage() {
                 {/* Right Column - Status, Budget, History */}
                 <div className="space-y-6">
                     {/* Support Stats Card */}
-                    <Card className="border-border/60 shadow-sm bg-primary/5 border-primary/20">
-                        <CardContent className="p-6 flex items-center justify-between">
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-muted-foreground">Total Dukungan</p>
-                                <p className="text-3xl font-bold tracking-tight">{reportData.supportCount}</p>
-                                <p className="text-xs text-muted-foreground">Warga mendukung laporan ini</p>
-                            </div>
-                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                <ThumbsUp className="h-6 w-6" />
+                    <Card className="group bg-white border-slate-200 shadow-sm transition-all hover:border-blue-300 hover:shadow-md">
+                        <CardContent className="p-5">
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-slate-500">Total Dukungan</p>
+                                    <div className="flex items-baseline gap-2 mt-2">
+                                        <span className="text-4xl font-bold tracking-tight text-slate-900">
+                                            {reportData.supportCount}
+                                        </span>
+                                        <div className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">
+                                            Warga
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-2 max-w-[200px] leading-relaxed">
+                                        Mendukung agar laporan ini segera ditindaklanjuti.
+                                    </p>
+                                </div>
+                                <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                    <ThumbsUp className="h-5 w-5" />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
