@@ -1,0 +1,264 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  USER
+  ADMIN
+  DINAS
+}
+
+enum DinasType {
+  PUPR
+  DIKNAS
+  DINKES
+  ESDM
+}
+
+enum ReportCategory {
+  JALAN
+  JEMBATAN
+  SEKOLAH
+  KESEHATAN
+  AIR
+  LISTRIK
+}
+
+enum ReportStatus {
+  MENUNGGU_VERIFIKASI
+  DIDISPOSISIKAN
+  DITOLAK
+  DITOLAK_DINAS
+  DIVERIFIKASI_DINAS
+  DALAM_PENGERJAAN
+  SELESAI
+}
+
+enum ReportImageType {
+  BUKTI
+  DOKUMENTASI
+  PENYELESAIAN
+}
+
+enum TimelineEventType {
+  CREATED
+  VERIFIED_ADMIN
+  REJECTED_ADMIN
+  DISPOSED_TO_DINAS
+  VERIFIED_DINAS
+  REJECTED_DINAS
+  BUDGET_SET
+  PROGRESS_UPDATE
+  COMPLETED
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  avatar    String?
+  role      UserRole @default(USER)
+
+  // Relasi ke Dinas (untuk user dengan role DINAS)
+  dinasId String?
+  dinas   Dinas?  @relation(fields: [dinasId], references: [id])
+
+  // Relations
+  reports         Report[]         @relation("UserReports")
+  supports        Support[]
+  timelines       ReportTimeline[] @relation("TimelineActor")
+  progressUpdates ReportProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Dinas {
+  id          String    @id @default(cuid())
+  type        DinasType @unique
+  name        String
+  description String?
+
+  // Relations
+  members User[]
+  reports Report[] @relation("DinasReports")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("dinas")
+}
+
+model Report {
+  id String @id @default(cuid())
+
+  // Reporter
+  userId String
+  user   User   @relation("UserReports", fields: [userId], references: [id])
+
+  // Assigned Dinas
+  dinasId String?
+  dinas   Dinas?  @relation("DinasReports", fields: [dinasId], references: [id])
+
+  // Report Data
+  category     ReportCategory
+  description  String         @db.Text
+  locationText String
+  latitude     Float
+  longitude    Float
+
+  // Status & Flow
+  status ReportStatus @default(MENUNGGU_VERIFIKASI)
+
+  // Admin Notes
+  adminNote       String?   @db.Text
+  adminVerifiedAt DateTime?
+  adminVerifiedBy String?
+
+  // Dinas Notes
+  dinasNote       String?   @db.Text
+  dinasVerifiedAt DateTime?
+  dinasVerifiedBy String?
+
+  // Rejection
+  rejectionReason String?   @db.Text
+  rejectedAt      DateTime?
+  rejectedBy      String?
+
+  // Budget
+  budgetTotal Decimal? @db.Decimal(15, 2)
+  budgetUsed  Decimal? @default(0) @db.Decimal(15, 2)
+
+  // Completion
+  completionNote String?   @db.Text
+  completedAt    DateTime?
+
+  // Relations
+  images   ReportImage[]
+  timeline ReportTimeline[]
+  progress ReportProgress[]
+  supports Support[]
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([dinasId])
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+  @@map("reports")
+}
+
+model ReportImage {
+  id String @id @default(cuid())
+
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  url  String
+  type ReportImageType
+
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+  @@map("report_images")
+}
+
+model ReportTimeline {
+  id String @id @default(cuid())
+
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // Who performed the action
+  actorId String
+  actor   User   @relation("TimelineActor", fields: [actorId], references: [id])
+
+  // Event details
+  eventType   TimelineEventType
+  title       String
+  description String            @db.Text
+
+  // Optional: Budget info for progress updates
+  budgetUsed Decimal? @db.Decimal(15, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+  @@index([createdAt])
+  @@map("report_timelines")
+}
+
+model ReportProgress {
+  id String @id @default(cuid())
+
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // Dinas user who made the update
+  dinasUserId String
+  dinasUser   User   @relation(fields: [dinasUserId], references: [id])
+
+  description String  @db.Text
+  budgetUsed  Decimal @db.Decimal(15, 2)
+
+  // Relations
+  images ProgressImage[]
+
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+  @@map("report_progress")
+}
+
+model ProgressImage {
+  id String @id @default(cuid())
+
+  progressId String
+  progress   ReportProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+
+  url String
+
+  createdAt DateTime @default(now())
+
+  @@index([progressId])
+  @@map("progress_images")
+}
+
+model Support {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, reportId])
+  @@index([reportId])
+  @@map("supports")
+}
