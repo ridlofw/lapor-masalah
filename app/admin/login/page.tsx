@@ -16,21 +16,39 @@ export default function AdminLoginPage() {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setError("")
         setIsLoading(true)
 
-        // Mock authentication delay
-        setTimeout(() => {
-            if (username === "admin" && password === "admin") {
-                document.cookie = "admin_session=true; path=/"
-                router.push("/admin/dashboard")
-            } else {
-                setError("Username atau password salah")
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: username, password }),
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                setError(data.error || "Username atau password salah")
                 setIsLoading(false)
+                return
             }
-        }, 1000)
+
+            if (data.user.role !== "ADMIN") {
+                setError("Akun ini bukan akun admin")
+                setIsLoading(false)
+                return
+            }
+
+            router.push("/admin/dashboard")
+        } catch {
+            setError("Terjadi kesalahan saat login")
+            setIsLoading(false)
+        }
     }
 
     return (
