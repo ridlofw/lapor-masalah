@@ -1,11 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Report } from "@/lib/data";
+import { Report } from "@/lib/types";
 
 interface BudgetTransparencyProps {
     budget: Report["budget"];
 }
 
 export function BudgetTransparency({ budget }: BudgetTransparencyProps) {
+    if (!budget) {
+        return null;
+    }
+
     return (
         <Card className="border-gray-100 shadow-sm">
             <CardHeader className="pb-3">

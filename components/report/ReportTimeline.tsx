@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TimelineItem } from "@/lib/data";
+import { TimelineItem } from "@/lib/types";
 import { CheckCircle2, Clock, FileText, Send } from "lucide-react";
 import Image from "next/image";
 import { ZoomableImage } from "@/components/ui/zoomable-image";

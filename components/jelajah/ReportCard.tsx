@@ -56,13 +56,13 @@ export function ReportCard(props: ReportCardProps) {
     };
 
     return (
-        <Card className="group hover:shadow-lg transition-shadow cursor-pointer h-full border-gray-200 overflow-hidden" onClick={() => router.push(`/laporan/${id}`)}>
-            <div className="relative aspect-video w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                <ZoomableImage
+        <Card className="group hover:shadow-lg transition-shadow cursor-pointer h-full border-gray-200 overflow-hidden p-0 gap-0" onClick={() => router.push(`/laporan/${id}`)}>
+            <div className="relative aspect-video w-full overflow-hidden">
+                <Image
                     src={image}
                     alt={title}
-                    className="w-full h-full"
-                    imageClassName="group-hover:scale-105 transition-transform duration-300"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 <div className="absolute top-3 left-3">
                     <Badge className={`hover:bg-opacity-100 ${getStatusColor(status)} shadow-sm`}>
