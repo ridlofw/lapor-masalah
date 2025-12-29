@@ -18,19 +18,19 @@ export default function LoginPage() {
     const { login, isLoading } = useAuth()
     const router = useRouter()
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setError("")
 
-        // Mock authentication delay handled by AuthContext but we add a check here for inputs
         if (!email || !password) {
             setError("Email atau password tidak boleh kosong")
             return
         }
 
-        // Use login from context
-        login(email)
-        router.push("/")
+        const result = await login(email, password)
+        if (!result.success) {
+            setError(result.error || "Login gagal")
+        }
     }
 
     return (

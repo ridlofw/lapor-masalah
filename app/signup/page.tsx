@@ -21,7 +21,7 @@ export default function SignupPage() {
     const { signup, isLoading } = useAuth()
     const router = useRouter()
 
-    const handleSignup = (e: React.FormEvent) => {
+    const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault()
         setError("")
 
@@ -31,8 +31,16 @@ export default function SignupPage() {
             return
         }
 
-        signup(name, email)
-        router.push("/")
+        try {
+            const result = await signup(name, email, password)
+            if (!result.success) {
+                setError(result.error || "Gagal mendaftar")
+            } else {
+                router.push("/")
+            }
+        } catch (err) {
+            setError("Terjadi kesalahan sistem")
+        }
     }
 
     return (
