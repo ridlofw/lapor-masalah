@@ -30,6 +30,27 @@ export function middleware(request: NextRequest) {
         }
     }
 
+    // API Protection for admin/dinas routes
+    if (path.startsWith('/api/admin')) {
+        const adminSession = request.cookies.get('admin_session')
+        if (!adminSession) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+    }
+
+    if (path.startsWith('/api/dinas')) {
+        const dinasSession = request.cookies.get('dinas_session')
+        if (!dinasSession) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+    }
+
     return NextResponse.next()
 }
 
@@ -37,5 +58,7 @@ export const config = {
     matcher: [
         '/admin/:path*',
         '/dinas/:path*',
+        '/api/admin/:path*',
+        '/api/dinas/:path*',
     ],
 }

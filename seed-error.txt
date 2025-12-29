@@ -1,0 +1,40 @@
+﻿
+> lapor-masalah@0.1.0 db:seed
+> npx tsx prisma/seed.ts
+
+D:\GitHub\lapor-masalah\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:259
+        throw new PrismaClientInitializationError(
+              ^
+System.Management.Automation.RemoteException
+PrismaClientInitializationError: `PrismaClient` needs to be constructed with a non-empty, valid `PrismaClientOptions`:
+System.Management.Automation.RemoteException
+```
+new PrismaClient({
+  ...
+})
+```
+System.Management.Automation.RemoteException
+or
+System.Management.Automation.RemoteException
+```
+constructor() {
+  super({ ... });
+}
+```
+          
+    at new t (D:\GitHub\lapor-masalah\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:259:15)
+    at bcrypt (D:\GitHub\lapor-masalah\prisma\seed.ts:6:16)
+    at Object.<anonymous> (D:\GitHub\lapor-masalah\prisma\seed.ts:117:6)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object.transformer (D:\GitHub\lapor-masalah\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at loadCJSModuleWithModuleLoad (node:internal/modules/esm/translators:336:3) {
+  clientVersion: '7.2.0',
+  errorCode: undefined,
+  retryable: undefined
+}
+System.Management.Automation.RemoteException
+Node.js v24.11.1
