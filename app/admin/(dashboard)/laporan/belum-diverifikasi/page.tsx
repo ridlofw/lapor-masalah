@@ -19,6 +19,7 @@ interface Report {
         name: string
         email: string
     }
+    supportCount: number
 }
 
 function formatDate(dateString: string): string {
@@ -37,6 +38,8 @@ function formatCategory(category: string): string {
         KESEHATAN: "Kesehatan",
         AIR: "Air",
         LISTRIK: "Listrik",
+        PERIZINAN: "Perizinan",
+        LAINNYA: "Lainnya",
     }
     return map[category] || category
 }
@@ -83,6 +86,16 @@ const columns: ColumnDef<Report>[] = [
             <span className="line-clamp-1 max-w-[200px]" title={item.locationText}>
                 {item.locationText}
             </span>
+        ),
+    },
+    {
+        key: "supportCount",
+        header: "Dukungan",
+        sortable: true,
+        cell: (item) => (
+            <div className="flex items-center gap-1 font-medium text-slate-600">
+                <span>{item.supportCount}</span>
+            </div>
         ),
     },
     {
