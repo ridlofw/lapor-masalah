@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthContext";
 import { ZoomableImage } from "@/components/ui/zoomable-image";
+import { supabase } from "@/lib/supabase";
 
 // Dynamic import with ssr: false to prevent hydration mismatch with Leaflet
 const LocationPicker = dynamic(() => import("@/components/map/LocationPicker"), {
@@ -43,6 +44,7 @@ export default function LaporPage() {
     const { user, isLoading } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState<string>("Jalan");
     const [desc, setDesc] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Location State
     const [location, setLocation] = useState("");
@@ -180,6 +182,91 @@ export default function LaporPage() {
             handleSearchLocation();
         }
     }
+
+    // Category to API mapping
+    const categoryMapping: Record<string, string> = {
+        "Jalan": "JALAN",
+        "Jembatan": "JEMBATAN",
+        "Sekolah": "SEKOLAH",
+        "Kesehatan": "KESEHATAN",
+        "Air": "AIR",
+        "Listrik": "LISTRIK",
+    };
+
+    const handleSubmit = async () => {
+        // Validation
+        if (!desc.trim()) {
+            alert("Mohon isi deskripsi masalah");
+            return;
+        }
+        if (!location.trim()) {
+            alert("Mohon isi lokasi kejadian");
+            return;
+        }
+        if (!coordinates) {
+            alert("Mohon pilih lokasi pada peta");
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            // 1. Upload Images to Supabase Storage
+            const imageUrls: string[] = [];
+
+            if (images.length > 0) {
+                // Ensure bucket exists or handled by policy
+                for (const image of images) {
+                    const fileExt = image.name.split('.').pop();
+                    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+                    const filePath = `${user?.id}/${fileName}`;
+
+                    const { data, error } = await supabase.storage
+                        .from('reports')
+                        .upload(filePath, image);
+
+                    if (error) {
+                        throw new Error(`Gagal upload gambar: ${error.message}`);
+                    }
+
+                    if (data) {
+                        const { data: publicUrlData } = supabase.storage
+                            .from('reports')
+                            .getPublicUrl(data.path);
+                        imageUrls.push(publicUrlData.publicUrl);
+                    }
+                }
+            }
+
+            // 2. Submit Report Data
+            const response = await fetch('/api/reports', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    category: categoryMapping[selectedCategory] || 'JALAN',
+                    description: desc,
+                    locationText: location,
+                    latitude: coordinates.lat,
+                    longitude: coordinates.lng,
+                    images: imageUrls,
+                }),
+            });
+
+            if (response.ok) {
+                router.push("/laporan-saya?success=true");
+            } else {
+                const data = await response.json();
+                alert(data.error || "Gagal mengirim laporan");
+            }
+        } catch (error: any) {
+            console.error("Submit error:", error);
+            alert(error.message || "Terjadi kesalahan saat mengirim laporan");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -403,9 +490,17 @@ export default function LaporPage() {
                                     </Button>
                                     <Button
                                         className="bg-blue-600 hover:bg-blue-700 text-white h-11 px-8 shadow-sm shadow-blue-200 transition-all hover:shadow-blue-300 hover:-translate-y-0.5"
-                                        onClick={() => router.push("/laporan-saya")}
+                                        onClick={handleSubmit}
+                                        disabled={isSubmitting}
                                     >
-                                        Kirim Laporan
+                                        {isSubmitting ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Mengirim...
+                                            </>
+                                        ) : (
+                                            "Kirim Laporan"
+                                        )}
                                     </Button>
                                 </div>
 

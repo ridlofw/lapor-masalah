@@ -34,181 +34,113 @@ import {
     ChevronRight,
     Filter,
     Lock,
-    LogIn
+    LogIn,
+    XCircle,
+    Activity
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
-
-// Mock Data
-const INITIAL_REPORTS = [
-    {
-        id: "#LM-2023-001",
-        category: "Jalan",
-        location: "Desa Suka Maju, NTT",
-        date: "2023-10-12",
-        status: "Diproses",
-        statusColor: "bg-blue-100 text-blue-700 hover:bg-blue-100",
-    },
-    {
-        id: "#LM-2023-002",
-        category: "Listrik",
-        location: "Desa Won Raba, NTT",
-        date: "2023-10-10",
-        status: "Selesai",
-        statusColor: "bg-green-100 text-green-700 hover:bg-green-100",
-    },
-    {
-        id: "#LM-2023-003",
-        category: "Jembatan",
-        location: "Kec. Alor, NTT",
-        date: "2023-10-05",
-        status: "Menunggu",
-        statusColor: "bg-gray-100 text-gray-700 hover:bg-gray-100",
-    },
-    {
-        id: "#LM-2023-004",
-        category: "Air",
-        location: "Desa Bena, NTT",
-        date: "2023-10-01",
-        status: "Selesai",
-        statusColor: "bg-green-100 text-green-700 hover:bg-green-100",
-    },
-    {
-        id: "#LM-2023-005",
-        category: "Sekolah",
-        location: "Pulau Rote, NTT",
-        date: "2023-09-28",
-        status: "Diproses",
-        statusColor: "bg-blue-100 text-blue-700 hover:bg-blue-100",
-    },
-    {
-        id: "#LM-2023-006",
-        category: "Jalan",
-        location: "Desa Oeteta, NTT",
-        date: "2023-09-25",
-        status: "Menunggu",
-        statusColor: "bg-gray-100 text-gray-700 hover:bg-gray-100",
-    },
-    {
-        id: "#LM-2023-007",
-        category: "Air",
-        location: "Desa Mamboro, NTT",
-        date: "2023-09-20",
-        status: "Selesai",
-        statusColor: "bg-green-100 text-green-700 hover:bg-green-100",
-    },
-    {
-        id: "#LM-2023-008",
-        category: "Listrik",
-        location: "Desa Baumata, NTT",
-        date: "2023-09-18",
-        status: "Diproses",
-        statusColor: "bg-blue-100 text-blue-700 hover:bg-blue-100",
-    },
-    {
-        id: "#LM-2023-009",
-        category: "Jalan",
-        location: "Kota Kupang, NTT",
-        date: "2023-09-15",
-        status: "Selesai",
-        statusColor: "bg-green-100 text-green-700 hover:bg-green-100",
-    },
-    {
-        id: "#LM-2023-010",
-        category: "Sekolah",
-        location: "Kab. TTS, NTT",
-        date: "2023-09-10",
-        status: "Menunggu",
-        statusColor: "bg-gray-100 text-gray-700 hover:bg-gray-100",
-    },
-    {
-        id: "#LM-2023-011",
-        category: "Jembatan",
-        location: "Kab. TTU, NTT",
-        date: "2023-09-05",
-        status: "Selesai",
-        statusColor: "bg-green-100 text-green-700 hover:bg-green-100",
-    },
-    {
-        id: "#LM-2023-012",
-        category: "Air",
-        location: "Kab. Belu, NTT",
-        date: "2023-09-01",
-        status: "Diproses",
-        statusColor: "bg-blue-100 text-blue-700 hover:bg-blue-100",
-    },
-];
-
-type SortConfig = {
-    key: keyof typeof INITIAL_REPORTS[0] | null;
-    direction: 'asc' | 'desc';
-};
 
 export default function LaporanSaya() {
     const router = useRouter();
     const { user, isLoading } = useAuth();
+
+    // Data States
+    const [reports, setReports] = useState<any[]>([]);
+    const [stats, setStats] = useState({ total: 0, inProgress: 0, completed: 0 });
+    const [loadingData, setLoadingData] = useState(true);
+
+    // Filter States
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [currentPage, setCurrentPage] = useState(1);
-    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+    const [totalItems, setTotalItems] = useState(0);
 
-    // Filter and Sort Data
-    const filteredData = useMemo(() => {
-        let result = [...INITIAL_REPORTS];
+    const totalPages = Math.ceil(totalItems / rowsPerPage);
 
-        // Filter by Search
-        if (searchTerm) {
-            result = result.filter(
-                (item) =>
-                    item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    item.category.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-        }
+    useEffect(() => {
+        if (!user) return;
 
-        // Filter by Status
-        if (statusFilter !== "all") {
-            result = result.filter(
-                (item) => item.status.toLowerCase() === statusFilter.toLowerCase()
-            );
-        }
+        // Fetch Stats
+        fetch('/api/reports/mine/stats')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.error) setStats(data);
+            })
+            .catch(err => console.error("Stats fetch error:", err));
 
-        // Sorting
-        if (sortConfig.key) {
-            result.sort((a, b) => {
-                if (a[sortConfig.key!] < b[sortConfig.key!]) {
-                    return sortConfig.direction === "asc" ? -1 : 1;
+    }, [user]);
+
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchData = async () => {
+            setLoadingData(true);
+            try {
+                const params = new URLSearchParams();
+                params.set('page', currentPage.toString());
+                params.set('limit', rowsPerPage.toString());
+                if (statusFilter !== 'all') params.set('status', statusFilter);
+                if (searchTerm) params.set('search', searchTerm);
+
+                const res = await fetch(`/api/reports/mine?${params.toString()}`);
+                const data = await res.json();
+
+                if (data.reports) {
+                    setReports(data.reports);
+                    setTotalItems(data.pagination.total);
+                    // Adjust page if out of bounds
+                    if (currentPage > 1 && data.reports.length === 0 && data.pagination.total > 0) {
+                        setCurrentPage(Math.max(1, Math.ceil(data.pagination.total / rowsPerPage)));
+                    }
                 }
-                if (a[sortConfig.key!] > b[sortConfig.key!]) {
-                    return sortConfig.direction === "asc" ? 1 : -1;
-                }
-                return 0;
-            });
-        }
+            } catch (error) {
+                console.error("Reports fetch error:", error);
+            } finally {
+                setLoadingData(false);
+            }
+        };
 
-        return result;
-    }, [searchTerm, statusFilter, sortConfig]);
+        const timeout = setTimeout(fetchData, 300); // 300ms debounce
+        return () => clearTimeout(timeout);
 
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-    const paginatedData = filteredData.slice(
-        (currentPage - 1) * rowsPerPage,
-        currentPage * rowsPerPage
-    );
-
-    const handleSort = (key: keyof typeof INITIAL_REPORTS[0]) => {
-        let direction: 'asc' | 'desc' = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
-        setSortConfig({ key, direction });
-    };
+    }, [user, currentPage, rowsPerPage, statusFilter, searchTerm]);
 
     const formatDate = (dateString: string) => {
         const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
         return new Date(dateString).toLocaleDateString('id-ID', options);
+    };
+
+    const getStatusInfo = (status: string) => {
+        switch (status) {
+            case "MENUNGGU_VERIFIKASI":
+                return { label: "Menunggu", color: "bg-gray-100 text-gray-700", dot: "bg-gray-500" };
+            case "DIDISPOSISIKAN":
+                return { label: "Didisposisikan", color: "bg-blue-100 text-blue-700", dot: "bg-blue-500" };
+            case "DIVERIFIKASI_DINAS":
+                return { label: "Diverifikasi", color: "bg-indigo-100 text-indigo-700", dot: "bg-indigo-500" };
+            case "DALAM_PENGERJAAN":
+                return { label: "Pengerjaan", color: "bg-amber-100 text-amber-700", dot: "bg-amber-500" };
+            case "SELESAI":
+                return { label: "Selesai", color: "bg-green-100 text-green-700", dot: "bg-green-500" };
+            case "DITOLAK":
+            case "DITOLAK_DINAS":
+                return { label: "Ditolak", color: "bg-red-100 text-red-700", dot: "bg-red-500" };
+            default:
+                return { label: status, color: "bg-gray-100 text-gray-700", dot: "bg-gray-500" };
+        }
+    };
+
+    const getCategoryColor = (category: string) => {
+        switch (category) {
+            case "JALAN": case "JEMBATAN": return "bg-red-400";
+            case "LISTRIK": return "bg-yellow-400";
+            case "AIR": return "bg-blue-400";
+            case "SEKOLAH": case "KESEHATAN": return "bg-green-400";
+            default: return "bg-gray-400";
+        }
     };
 
     if (isLoading) {
@@ -216,7 +148,7 @@ export default function LaporanSaya() {
             <div className="min-h-screen bg-gray-50/50 flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             </div>
-        );
+        )
     }
 
     return (
@@ -274,20 +206,20 @@ export default function LaporanSaya() {
                         <div className="grid gap-6 md:grid-cols-3">
                             <StatsCard
                                 title="TOTAL LAPORAN"
-                                value="12"
+                                value={stats.total.toString()}
                                 icon={Folder}
                                 iconClassName="text-gray-400"
                             />
                             <StatsCard
                                 title="DIPROSES"
-                                value="5"
-                                icon={Loader2}
-                                iconClassName="text-blue-500"
-                                valueClassName="text-blue-500"
+                                value={stats.inProgress.toString()}
+                                icon={Activity}
+                                iconClassName="text-amber-500"
+                                valueClassName="text-amber-500"
                             />
                             <StatsCard
                                 title="SELESAI"
-                                value="7"
+                                value={stats.completed.toString()}
                                 icon={CheckCircle2}
                                 iconClassName="text-green-500"
                                 valueClassName="text-green-500"
@@ -301,7 +233,7 @@ export default function LaporanSaya() {
                                 <div className="relative flex-1 w-full">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                     <Input
-                                        placeholder="Cari ID Laporan atau Lokasi..."
+                                        placeholder="Cari ID Laporan, Lokasi, atau Keterangan..."
                                         className="pl-9 border-0 bg-transparent shadow-none focus-visible:ring-0 h-10 w-full"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -312,7 +244,10 @@ export default function LaporanSaya() {
                                 <div className="hidden md:block h-8 w-px bg-gray-200 mx-2" />
 
                                 <div className="w-full md:w-auto min-w-[200px]">
-                                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                    <Select value={statusFilter} onValueChange={(val) => {
+                                        setStatusFilter(val);
+                                        setCurrentPage(1);
+                                    }}>
                                         <SelectTrigger className="border-0 shadow-none bg-transparent focus:ring-0 h-10 gap-2 hover:bg-gray-50/50 transition-colors">
                                             <div className="flex items-center gap-2 text-gray-500">
                                                 <Filter className="h-4 w-4" />
@@ -325,6 +260,7 @@ export default function LaporanSaya() {
                                             <SelectItem value="menunggu" className="cursor-pointer">Menunggu</SelectItem>
                                             <SelectItem value="diproses" className="cursor-pointer">Diproses</SelectItem>
                                             <SelectItem value="selesai" className="cursor-pointer">Selesai</SelectItem>
+                                            <SelectItem value="ditolak" className="cursor-pointer">Ditolak</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -335,94 +271,72 @@ export default function LaporanSaya() {
                                 <Table>
                                     <TableHeader className="bg-gray-50/50">
                                         <TableRow>
-                                            <TableHead
-                                                className="w-[180px] font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
-                                                onClick={() => handleSort('id')}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    ID Laporan
-                                                    <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                                                </div>
-                                            </TableHead>
-                                            <TableHead
-                                                className="font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
-                                                onClick={() => handleSort('category')}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    Kategori
-                                                    <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                                                </div>
-                                            </TableHead>
-                                            <TableHead
-                                                className="font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
-                                                onClick={() => handleSort('location')}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    Lokasi
-                                                    <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                                                </div>
-                                            </TableHead>
-                                            <TableHead
-                                                className="font-semibold text-[#1e293b] cursor-pointer hover:bg-gray-100 transition-colors"
-                                                onClick={() => handleSort('date')}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    Tanggal
-                                                    <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                                                </div>
-                                            </TableHead>
+                                            <TableHead className="w-[180px] font-semibold text-[#1e293b]">ID Laporan</TableHead>
+                                            <TableHead className="font-semibold text-[#1e293b]">Kategori</TableHead>
+                                            <TableHead className="font-semibold text-[#1e293b]">Lokasi</TableHead>
+                                            <TableHead className="font-semibold text-[#1e293b]">Tanggal</TableHead>
                                             <TableHead className="font-semibold text-[#1e293b]">Status</TableHead>
                                             <TableHead className="text-right font-semibold text-[#1e293b]">Aksi</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {paginatedData.length > 0 ? (
-                                            paginatedData.map((report) => (
-                                                <TableRow key={report.id} className="hover:bg-gray-50/50 transition-colors">
-                                                    <TableCell className="font-medium text-gray-600">
-                                                        {report.id}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-2 text-[#1e293b]">
-                                                            {report.category === "Jalan" || report.category === "Jembatan" ? <div className="h-2 w-2 rounded-full bg-red-400" /> :
-                                                                report.category === "Listrik" ? <div className="h-2 w-2 rounded-full bg-yellow-400" /> :
-                                                                    report.category === "Air" ? <div className="h-2 w-2 rounded-full bg-blue-400" /> :
-                                                                        report.category === "Sekolah" || report.category === "Kesehatan" ? <div className="h-2 w-2 rounded-full bg-green-400" /> :
-                                                                            <div className="h-2 w-2 rounded-full bg-gray-400" />
-                                                            }
-                                                            {report.category}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-gray-600">{report.location}</TableCell>
-                                                    <TableCell className="text-gray-600">{formatDate(report.date)}</TableCell>
-                                                    <TableCell>
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className={`${report.statusColor} font-medium border-0 px-3 py-1`}
-                                                        >
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                                                                {report.status}
-                                                            </div>
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 gap-1"
-                                                            onClick={() => router.push(`/laporan/${report.id}`)}
-                                                        >
-                                                            Detail
-                                                            <ArrowRight className="h-3 w-3" />
-                                                        </Button>
-                                                    </TableCell>
+                                        {loadingData ? (
+                                            Array.from({ length: 5 }).map((_, i) => (
+                                                <TableRow key={i}>
+                                                    <TableCell><div className="h-4 w-24 bg-gray-200 rounded animate-pulse" /></TableCell>
+                                                    <TableCell><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></TableCell>
+                                                    <TableCell><div className="h-4 w-32 bg-gray-200 rounded animate-pulse" /></TableCell>
+                                                    <TableCell><div className="h-4 w-24 bg-gray-200 rounded animate-pulse" /></TableCell>
+                                                    <TableCell><div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse" /></TableCell>
+                                                    <TableCell><div className="h-8 w-16 bg-gray-200 rounded ml-auto animate-pulse" /></TableCell>
                                                 </TableRow>
                                             ))
+                                        ) : reports.length > 0 ? (
+                                            reports.map((report) => {
+                                                const info = getStatusInfo(report.status);
+                                                const catColor = getCategoryColor(report.category);
+                                                return (
+                                                    <TableRow key={report.id} className="hover:bg-gray-50/50 transition-colors">
+                                                        <TableCell className="font-medium text-gray-600 uppercase">
+                                                            #{report.id.slice(0, 8)}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-2 text-[#1e293b]">
+                                                                <div className={`h-2 w-2 rounded-full ${catColor}`} />
+                                                                {report.category}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-gray-600 max-w-[200px] truncate" title={report.locationText}>{report.locationText}</TableCell>
+                                                        <TableCell className="text-gray-600">{formatDate(report.createdAt)}</TableCell>
+                                                        <TableCell>
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className={`${info.color} font-medium border-0 px-3 py-1`}
+                                                            >
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className={`h-1.5 w-1.5 rounded-full ${info.dot}`} />
+                                                                    {info.label}
+                                                                </div>
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 gap-1"
+                                                                onClick={() => router.push(`/laporan/${report.id}`)}
+                                                            >
+                                                                Detail
+                                                                <ArrowRight className="h-3 w-3" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )
+                                            })
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="h-24 text-center">
-                                                    Tidak ada data laporan yang ditemukan.
+                                                <TableCell colSpan={6} className="h-32 text-center text-gray-500">
+                                                    Tidak ada laporan yang ditemukan.
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -449,7 +363,7 @@ export default function LaporanSaya() {
                                                 <SelectItem value="50">50</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <span>dari <span className="font-medium text-[#1e293b]">{filteredData.length}</span> hasil</span>
+                                        <span>dari <span className="font-medium text-[#1e293b]">{totalItems}</span> hasil</span>
                                     </div>
 
                                     <div className="flex items-center gap-2">
