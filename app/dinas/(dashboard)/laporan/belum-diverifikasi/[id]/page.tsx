@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, MapPin, ThumbsUp, Wrench, XCircle, DollarSign } from "lucide-react"
+import { ArrowLeft, MapPin, ThumbsUp, Wrench, XCircle, DollarSign, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { SimpleAlertDialog } from "@/components/ui/simple-alert-dialog"
 import { ReportTimeline } from "@/components/report/ReportTimeline"
@@ -22,47 +22,52 @@ const LocationPicker = dynamic(() => import("@/components/map/LocationPicker"), 
     loading: () => <div className="h-[300px] w-full bg-muted animate-pulse flex items-center justify-center">Loading Map...</div>
 })
 
-// Mock Data for a specific report
-const reportData = {
-    id: "7281",
-    date: "14 Agustus 2024",
-    description: "Lubang besar di Jalan Merdeka No. 12, tepat di depan gerbang sekolah dasar, sangat membahayakan anak-anak dan pengendara. Kondisinya semakin parah saat hujan karena tergenang air dan tidak terlihat. Mohon segera diperbaiki untuk mencegah kecelakaan.",
-    images: [
-        "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?q=80&w=2070&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1584463673574-896131336423?q=80&w=2069&auto=format&fit=crop",
-        "https://plus.unsplash.com/premium_photo-1663045625458-385075677d24?q=80&w=2070&auto=format&fit=crop"
-    ],
-    category: "Jalan",
-    location: "Jl. Merdeka No. 12, Kel. Citarum, Kec. Bandung Wetan, Kota Bandung, Jawa Barat",
-    coordinates: { lat: -6.914744, lng: 107.609810 }, // Bandung
-    reporter: "Budi Santoso",
-    supportCount: 56, // Total Dukungan
-    timeline: [
-        {
-            date: "15 Agu 2024",
-            title: "Disposisi ke Dinas PUPR",
-            description: "Admin telah memverifikasi laporan dan meneruskan ke Dinas Pekerjaan Umum untuk ditindaklanjuti.",
-            status: "completed" as const
-        },
-        {
-            date: "14 Agu 2024",
-            title: "Verifikasi Admin",
-            description: "Laporan telah diverifikasi oleh admin pusat.",
-            status: "completed" as const
-        },
-        {
-            date: "14 Agu 2024",
-            title: "Laporan Masuk",
-            description: "Laporan baru diterima sistem.",
-            status: "completed" as const
-        }
-    ]
+interface ReportData {
+    id: string
+    description: string
+    category: string
+    locationText: string
+    latitude: number
+    longitude: number
+    status: string
+    supportCount: number
+    images: { id: string; url: string; type: string }[]
+    reporter: { id: string; name: string }
+    timeline: { id: string; eventType: string; title: string; description: string; createdAt: string }[]
+    adminNote?: string
+    createdAt: string
+}
+
+function formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    })
+}
+
+function formatCategory(category: string): string {
+    const map: Record<string, string> = {
+        JALAN: "Jalan",
+        JEMBATAN: "Jembatan",
+        SEKOLAH: "Sekolah",
+        KESEHATAN: "Kesehatan",
+        AIR: "Air",
+        LISTRIK: "Listrik",
+    }
+    return map[category] || category
 }
 
 export default function DinasReportDetailPage() {
     const params = useParams()
     const router = useRouter()
     const id = params.id as string
+
+    const [report, setReport] = useState<ReportData | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [activeImageIndex, setActiveImageIndex] = useState(0)
 
     // Form States
@@ -70,9 +75,6 @@ export default function DinasReportDetailPage() {
     const [initialBudget, setInitialBudget] = useState("")
     const [isVerifyOpen, setIsVerifyOpen] = useState(false)
 
-    // State for logic
-    // Initial status for Dinas is "Belum Diverifikasi" (meaning pending action from Dinas)
-    const [status, setStatus] = useState("Belum Diverifikasi")
     const [alertConfig, setAlertConfig] = useState<{
         open: boolean
         title: string
@@ -87,23 +89,62 @@ export default function DinasReportDetailPage() {
         onConfirm: () => { },
     })
 
-    const handleProcess = () => {
-        if (!verificationNotes.trim()) {
-            // This check might be redundant if we use the Dialog validation visually, 
-            // but good for safety if we trigger this function manually.
-            return
+    useEffect(() => {
+        async function fetchReport() {
+            try {
+                const response = await fetch(`/api/reports/${id}`)
+                if (response.ok) {
+                    const data = await response.json()
+                    setReport(data.report)
+                }
+            } catch (error) {
+                console.error("Failed to fetch report:", error)
+            } finally {
+                setIsLoading(false)
+            }
         }
 
-        // Simulate API call
-        console.log("Processing Report:", {
-            id,
-            notes: verificationNotes,
-            budget: initialBudget
-        })
+        fetchReport()
+    }, [id])
 
-        setStatus("Dalam Pengerjaan")
-        setIsVerifyOpen(false)
-        // router.push("/dinas/laporan/progress")
+    const handleProcess = async () => {
+        if (!verificationNotes.trim()) return
+
+        setIsSubmitting(true)
+        try {
+            // First verify
+            const verifyResponse = await fetch(`/api/dinas/reports/${id}/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note: verificationNotes }),
+            })
+
+            if (!verifyResponse.ok) {
+                const data = await verifyResponse.json()
+                alert(data.error || "Gagal memverifikasi laporan")
+                return
+            }
+
+            // Then set budget if provided
+            if (initialBudget) {
+                const budgetValue = initialBudget.replace(/\D/g, '')
+                if (budgetValue) {
+                    await fetch(`/api/dinas/reports/${id}/budget`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ budgetTotal: Number(budgetValue) }),
+                    })
+                }
+            }
+
+            setIsVerifyOpen(false)
+            router.push("/dinas/laporan/progress")
+        } catch (error) {
+            console.error("Process error:", error)
+            alert("Terjadi kesalahan")
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleReject = () => {
@@ -122,16 +163,63 @@ export default function DinasReportDetailPage() {
         setAlertConfig({
             open: true,
             title: "Tolak Laporan",
-            description: "Apakah Anda yakin ingin menolak laporan ini? Laporan akan ditandai sebagai 'Ditolak'.",
+            description: "Apakah Anda yakin ingin menolak laporan ini? Laporan akan dikembalikan ke Admin.",
             confirmText: "Tolak Laporan",
             variant: "destructive",
-            onConfirm: () => {
-                setStatus("Ditolak")
-                // Simulate redirect to Selesai/Ditolak page
-                router.push("/dinas/laporan/selesai")
+            onConfirm: async () => {
+                setIsSubmitting(true)
+                try {
+                    const response = await fetch(`/api/dinas/reports/${id}/reject`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: verificationNotes }),
+                    })
+
+                    if (response.ok) {
+                        router.push("/dinas/laporan/selesai")
+                    } else {
+                        const data = await response.json()
+                        alert(data.error || "Gagal menolak laporan")
+                    }
+                } catch (error) {
+                    console.error("Reject error:", error)
+                    alert("Terjadi kesalahan")
+                } finally {
+                    setIsSubmitting(false)
+                }
             }
         })
     }
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
+    if (!report) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-muted-foreground">Laporan tidak ditemukan</p>
+                <Link href="/dinas/laporan/belum-diverifikasi">
+                    <Button variant="outline" className="mt-4">Kembali</Button>
+                </Link>
+            </div>
+        )
+    }
+
+    const images = report.images.length > 0
+        ? report.images.map(img => img.url)
+        : ["https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?q=80&w=2070"]
+
+    const timelineData = report.timeline.map(t => ({
+        date: formatDate(t.createdAt),
+        title: t.title,
+        description: t.description,
+        status: "completed" as const
+    }))
 
     return (
         <div className="space-y-6">
@@ -152,7 +240,7 @@ export default function DinasReportDetailPage() {
                     </Button>
                 </Link>
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Detail Laporan #{id}</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">Detail Laporan #{id.slice(0, 8)}</h2>
                     <p className="text-muted-foreground">
                         Tinjau laporan masuk dan tentukan tindakan selanjutnya.
                     </p>
@@ -160,34 +248,26 @@ export default function DinasReportDetailPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Left Column - Report Details (Takes up 2 columns) */}
+                {/* Left Column - Report Details */}
                 <div className="md:col-span-2 space-y-6">
                     <Card className="overflow-hidden p-0 gap-0">
-                        {/* Main Image */}
                         <div className="relative w-full aspect-video bg-muted border-b">
                             <ZoomableImage
-                                src={reportData.images[activeImageIndex]}
+                                src={images[activeImageIndex]}
                                 alt={`Report Image ${activeImageIndex + 1}`}
                                 className="w-full h-full"
                             />
                         </div>
 
-                        {/* Thumbnails */}
-                        {reportData.images.length > 1 && (
+                        {images.length > 1 && (
                             <div className="flex gap-2 p-4 overflow-x-auto border-b bg-gray-50/50">
-                                {reportData.images.map((img, index) => (
+                                {images.map((img, index) => (
                                     <button
                                         key={index}
                                         onClick={() => setActiveImageIndex(index)}
-                                        className={`relative h-20 w-24 shrink-0 overflow-hidden rounded-md border-2 transition-all ${index === activeImageIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent opacity-70 hover:opacity-100"
-                                            }`}
+                                        className={`relative h-20 w-24 shrink-0 overflow-hidden rounded-md border-2 transition-all ${index === activeImageIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent opacity-70 hover:opacity-100"}`}
                                     >
-                                        <Image
-                                            src={img}
-                                            alt={`Thumbnail ${index + 1}`}
-                                            fill
-                                            className="object-cover"
-                                        />
+                                        <Image src={img} alt={`Thumbnail ${index + 1}`} fill className="object-cover" />
                                     </button>
                                 ))}
                             </div>
@@ -195,11 +275,17 @@ export default function DinasReportDetailPage() {
 
                         <CardContent className="p-6">
                             <div className="mb-4">
-                                <p className="text-sm text-muted-foreground">Dilaporkan pada {reportData.date}</p>
+                                <p className="text-sm text-muted-foreground">Dilaporkan pada {formatDate(report.createdAt)}</p>
                             </div>
                             <p className="text-gray-700 leading-relaxed text-lg">
-                                {reportData.description}
+                                {report.description}
                             </p>
+                            {report.adminNote && (
+                                <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                                    <p className="text-xs font-medium text-blue-700 mb-1">Catatan dari Admin:</p>
+                                    <p className="text-sm text-blue-600">{report.adminNote}</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -210,12 +296,12 @@ export default function DinasReportDetailPage() {
                         <CardContent className="space-y-4">
                             <div className="flex items-start gap-2">
                                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                                <p className="font-medium text-sm">{reportData.location}</p>
+                                <p className="font-medium text-sm">{report.locationText}</p>
                             </div>
                             <div className="h-[300px] w-full rounded-md overflow-hidden border relative z-0">
                                 <LocationPicker
-                                    center={reportData.coordinates}
-                                    onLocationSelect={() => { }} // Read-only
+                                    center={{ lat: report.latitude, lng: report.longitude }}
+                                    onLocationSelect={() => { }}
                                 />
                             </div>
                         </CardContent>
@@ -229,25 +315,18 @@ export default function DinasReportDetailPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs text-muted-foreground mb-1">Kategori</p>
-                                    <p className="font-medium text-sm">{reportData.category}</p>
+                                    <p className="font-medium text-sm">{formatCategory(report.category)}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground mb-1">Status Dinas</p>
-                                    <Badge
-                                        variant={status === "Ditolak" ? "destructive" : "secondary"}
-                                        className={`${status === "Dalam Pengerjaan" ? "bg-blue-100 text-blue-800 hover:bg-blue-100" :
-                                            status === "Belum Diverifikasi" ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" :
-                                                ""
-                                            }`}
-                                    >
-                                        {status === "Belum Diverifikasi" ? "Perlu Tindakan" : status}
+                                    <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-100">
+                                        Perlu Verifikasi
                                     </Badge>
                                 </div>
                             </div>
-
                             <div>
                                 <p className="text-xs text-muted-foreground mb-1">Pelapor</p>
-                                <p className="font-medium text-sm">{reportData.reporter}</p>
+                                <p className="font-medium text-sm">{report.reporter.name}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -255,7 +334,6 @@ export default function DinasReportDetailPage() {
 
                 {/* Right Column - Actions */}
                 <div className="space-y-6">
-                    {/* Support Stats Card */}
                     <Card className="group bg-white border-slate-200 shadow-sm transition-all hover:border-blue-300 hover:shadow-md">
                         <CardContent className="p-5">
                             <div className="flex justify-between items-start">
@@ -263,15 +341,12 @@ export default function DinasReportDetailPage() {
                                     <p className="text-sm font-medium text-slate-500">Total Dukungan</p>
                                     <div className="flex items-baseline gap-2 mt-2">
                                         <span className="text-4xl font-bold tracking-tight text-slate-900">
-                                            {reportData.supportCount}
+                                            {report.supportCount}
                                         </span>
                                         <div className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">
                                             Warga
                                         </div>
                                     </div>
-                                    <p className="text-xs text-slate-400 mt-2 max-w-[200px] leading-relaxed">
-                                        Mendukung agar laporan ini segera ditindaklanjuti.
-                                    </p>
                                 </div>
                                 <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
                                     <ThumbsUp className="h-5 w-5" />
@@ -280,101 +355,86 @@ export default function DinasReportDetailPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Timeline Component */}
-                    <ReportTimeline timeline={reportData.timeline} />
+                    <ReportTimeline timeline={timelineData} />
 
-                    {/* Verification Action Card */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">Verifikasi Laporan</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {status === "Belum Diverifikasi" ? (
-                                <>
-                                    <div className="space-y-2">
-                                        <label htmlFor="notes" className="text-sm font-medium">Catatan Verifikasi</label>
-                                        <Textarea
-                                            id="notes"
-                                            placeholder="Tambahkan catatan verifikasi atau alasan penolakan..."
-                                            value={verificationNotes}
-                                            onChange={(e) => setVerificationNotes(e.target.value)}
-                                            className="min-h-[100px]"
-                                        />
-                                    </div>
-                                    <div className="flex gap-3 pt-2">
-                                        <Button
-                                            variant="outline"
-                                            className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                            onClick={handleReject}
-                                        >
-                                            <XCircle className="mr-2 h-4 w-4" />
-                                            Tolak
-                                        </Button>
+                            <div className="space-y-2">
+                                <label htmlFor="notes" className="text-sm font-medium">Catatan Verifikasi</label>
+                                <Textarea
+                                    id="notes"
+                                    placeholder="Tambahkan catatan verifikasi atau alasan penolakan..."
+                                    value={verificationNotes}
+                                    onChange={(e) => setVerificationNotes(e.target.value)}
+                                    className="min-h-[100px]"
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    onClick={handleReject}
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+                                    Tolak
+                                </Button>
 
-                                        <Dialog open={isVerifyOpen} onOpenChange={setIsVerifyOpen}>
-                                            <DialogTrigger asChild>
-                                                <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                                                    <Wrench className="mr-2 h-4 w-4" />
-                                                    Verifikasi & Proses
-                                                </Button>
-                                            </DialogTrigger>
-                                            <DialogContent>
-                                                <DialogHeader>
-                                                    <DialogTitle>Verifikasi & Tetapkan Anggaran</DialogTitle>
-                                                    <DialogDescription>
-                                                        Sebelum memproses, tentukan estimasi anggaran yang dibutuhkan untuk perbaikan ini.
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                                <div className="space-y-4 py-4">
-                                                    <div className="space-y-2">
-                                                        <Label>Catatan Verifikasi</Label>
-                                                        <Textarea
-                                                            value={verificationNotes}
-                                                            onChange={(e) => setVerificationNotes(e.target.value)}
-                                                            className="bg-muted/50"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label>Estimasi Anggaran</Label>
-                                                        <div className="relative">
-                                                            <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                            <Input
-                                                                type="text"
-                                                                placeholder="Contoh: 50.000.000"
-                                                                className="pl-9"
-                                                                value={initialBudget}
-                                                                onChange={(e) => setInitialBudget(e.target.value)}
-                                                            />
-                                                        </div>
-                                                    </div>
+                                <Dialog open={isVerifyOpen} onOpenChange={setIsVerifyOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" disabled={isSubmitting}>
+                                            <Wrench className="mr-2 h-4 w-4" />
+                                            Verifikasi & Proses
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Verifikasi & Tetapkan Anggaran</DialogTitle>
+                                            <DialogDescription>
+                                                Sebelum memproses, tentukan estimasi anggaran yang dibutuhkan untuk perbaikan ini.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                                <Label>Catatan Verifikasi</Label>
+                                                <Textarea
+                                                    value={verificationNotes}
+                                                    onChange={(e) => setVerificationNotes(e.target.value)}
+                                                    className="bg-muted/50"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Estimasi Anggaran (Rp)</Label>
+                                                <div className="relative">
+                                                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="Contoh: 50000000"
+                                                        className="pl-9"
+                                                        value={initialBudget}
+                                                        onChange={(e) => setInitialBudget(e.target.value)}
+                                                    />
                                                 </div>
-                                                <DialogFooter>
-                                                    <Button variant="outline" onClick={() => setIsVerifyOpen(false)}>Batal</Button>
-                                                    <Button
-                                                        className="bg-blue-600 hover:bg-blue-700"
-                                                        onClick={handleProcess}
-                                                        disabled={!verificationNotes}
-                                                    >
-                                                        Konfirmasi & Proses
-                                                    </Button>
-                                                </DialogFooter>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
-                                </>
-                            ) : status === "Dalam Pengerjaan" ? (
-                                <div className="p-4 bg-blue-50 text-blue-700 rounded-md text-sm text-center border border-blue-200">
-                                    <Wrench className="h-5 w-5 mx-auto mb-2" />
-                                    <p className="font-semibold">Laporan Sedang Dikerjakan</p>
-                                    <p className="text-xs mt-1">Status telah diperbarui menjadi Dalam Pengerjaan.</p>
-                                </div>
-                            ) : (
-                                <div className="p-4 bg-red-50 text-red-700 rounded-md text-sm text-center border border-red-200">
-                                    <XCircle className="h-5 w-5 mx-auto mb-2" />
-                                    <p className="font-semibold">Laporan Ditolak</p>
-                                    <p className="text-xs mt-1">Laporan telah ditolak dengan catatan: "{verificationNotes}"</p>
-                                </div>
-                            )}
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setIsVerifyOpen(false)}>Batal</Button>
+                                            <Button
+                                                className="bg-blue-600 hover:bg-blue-700"
+                                                onClick={handleProcess}
+                                                disabled={!verificationNotes || isSubmitting}
+                                            >
+                                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                                Konfirmasi & Proses
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>

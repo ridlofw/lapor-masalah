@@ -1,92 +1,137 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { DataTable, ColumnDef } from "@/components/admin/DataTable"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, Wrench } from "lucide-react"
+import { Wrench, Loader2 } from "lucide-react"
 import Link from "next/link"
 
-const unverifiedReports = [
-    {
-        id: "12039",
-        category: "Jalan Rusak",
-        location: "Desa Sukamaju, Kec. Cempaka",
-        date: "20 Okt 2023",
-        status: "Menunggu Tindak Lanjut",
-    },
-    {
-        id: "12036",
-        category: "Jembatan Rusak",
-        location: "Sungai Ciliung, Desa Makmur",
-        date: "19 Okt 2023",
-        status: "Menunggu Tindak Lanjut",
-    },
-    {
-        id: "12037",
-        category: "Sekolah Rusak",
-        location: "SDN 01 Harapan Bangsa",
-        date: "18 Okt 2023",
-        status: "Menunggu Tindak Lanjut",
-    },
-    {
-        id: "12038",
-        category: "Irigasi Rusak",
-        location: "Area Persawahan Desa Tani Jaya",
-        date: "18 Okt 2023",
-        status: "Menunggu Tindak Lanjut",
-    },
-    {
-        id: "12035",
-        category: "Puskesmas Rusak",
-        location: "Puskesmas Sehat Selalu, Kec. Damai",
-        date: "17 Okt 2023",
-        status: "Menunggu Tindak Lanjut",
-    },
-    {
-        id: "12034",
-        category: "Jalan Rusak",
-        location: "Jalan Utama, Desa Sejahtera",
-        date: "16 Okt 2023",
-        status: "Menunggu Tindak Lanjut",
-    },
-]
+interface Report {
+    id: string
+    category: string
+    description: string
+    locationText: string
+    status: string
+    createdAt: string
+    reporter: {
+        id: string
+        name: string
+        email: string
+    }
+    supportCount: number
+}
 
-type Report = typeof unverifiedReports[0]
+function formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    })
+}
+
+function formatCategory(category: string): string {
+    const map: Record<string, string> = {
+        JALAN: "Jalan",
+        JEMBATAN: "Jembatan",
+        SEKOLAH: "Sekolah",
+        KESEHATAN: "Kesehatan",
+        AIR: "Air",
+        LISTRIK: "Listrik",
+        PERIZINAN: "Perizinan",
+        LAINNYA: "Lainnya",
+    }
+    return map[category] || category
+}
 
 const columns: ColumnDef<Report>[] = [
     {
-        key: "date",
+        key: "createdAt",
         header: "Tanggal",
         sortable: true,
+        cell: (item) => formatDate(item.createdAt),
     },
     {
         key: "id",
         header: "ID Laporan",
         sortable: true,
-        cell: (item) => <span className="font-medium">#{item.id}</span>
+        cell: (item) => <span className="font-medium">#{item.id.slice(0, 8)}</span>
     },
     {
         key: "category",
         header: "Kategori",
         sortable: true,
+        cell: (item) => formatCategory(item.category),
     },
     {
-        key: "location",
+        key: "locationText",
         header: "Lokasi",
         sortable: true,
+        cell: (item) => (
+            <span className="line-clamp-1 max-w-[200px]" title={item.locationText}>
+                {item.locationText}
+            </span>
+        ),
+    },
+    {
+        key: "supportCount",
+        header: "Dukungan",
+        sortable: true,
+        cell: (item) => (
+            <div className="flex items-center gap-1 font-medium text-slate-600">
+                <span>{item.supportCount}</span>
+            </div>
+        ),
     },
     {
         key: "status",
         header: "Status",
-        cell: (item) => (
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100/80">
-                {item.status}
+        cell: () => (
+            <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-100/80">
+                Menunggu Verifikasi
             </Badge>
         )
     },
 ]
 
 export default function DinasUnverifiedReportsPage() {
+    const [reports, setReports] = useState<Report[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        async function fetchReports() {
+            try {
+                const response = await fetch('/api/dinas/reports?section=pending')
+                if (response.ok) {
+                    const data = await response.json()
+                    setReports(data.reports || [])
+                }
+            } catch (error) {
+                console.error("Failed to fetch reports:", error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchReports()
+    }, [])
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Laporan Masuk</h2>
+                    <p className="text-muted-foreground">
+                        Daftar laporan yang perlu ditindaklanjuti oleh dinas.
+                    </p>
+                </div>
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-6">
             <div>
@@ -97,9 +142,9 @@ export default function DinasUnverifiedReportsPage() {
             </div>
 
             <DataTable
-                data={unverifiedReports}
+                data={reports}
                 columns={columns}
-                searchKeys={["id", "category", "location"]}
+                searchKeys={["id", "category", "locationText"]}
                 renderRowActions={(item) => (
                     <Link href={`/dinas/laporan/belum-diverifikasi/${item.id}`} passHref>
                         <Button variant="ghost" size="icon" title="Tindak Lanjuti">
