@@ -1,59 +1,96 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-
-const data = [
-    { name: "Jan", selesai: 20, dalam_proses: 10, belum_terjawab: 2 },
-    { name: "Feb", selesai: 25, dalam_proses: 12, belum_terjawab: 3 },
-    { name: "Mar", selesai: 22, dalam_proses: 15, belum_terjawab: 1 },
-    { name: "Apr", selesai: 28, dalam_proses: 13, belum_terjawab: 4 },
-    { name: "Mei", selesai: 30, dalam_proses: 11, belum_terjawab: 2 },
-    { name: "Jun", selesai: 35, dalam_proses: 14, belum_terjawab: 2 },
-    { name: "Jul", selesai: 32, dalam_proses: 16, belum_terjawab: 4 },
-    { name: "Agu", selesai: 28, dalam_proses: 18, belum_terjawab: 0 },
-    { name: "Sep", selesai: 30, dalam_proses: 15, belum_terjawab: 5 },
-    { name: "Okt", selesai: 25, dalam_proses: 12, belum_terjawab: 6 },
-    { name: "Nov", selesai: 29, dalam_proses: 10, belum_terjawab: 4 },
-    { name: "Des", selesai: 25, dalam_proses: 10, belum_terjawab: 3 },
-]
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function DinasReportsChart() {
+    const [range, setRange] = useState("monthly")
+    const [data, setData] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        async function fetchData() {
+            setIsLoading(true)
+            try {
+                const res = await fetch(`/api/dinas/stats/chart?range=${range}`)
+                if (res.ok) {
+                    const json = await res.json()
+                    setData(json.data)
+                }
+            } catch (error) {
+                console.error("Failed to fetch chart data:", error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [range])
+
+    const getRangeLabel = () => {
+        switch (range) {
+            case "weekly": return "7 Hari Terakhir"
+            case "monthly": return "30 Hari Terakhir"
+            case "yearly": return "Tahun Ini"
+            default: return "Bulan Ini"
+        }
+    }
+
     return (
         <Card className="col-span-1 lg:col-span-2">
-            <CardHeader>
-                <CardTitle>Statistik Laporan per Status</CardTitle>
-                <CardDescription>
-                    Pantau statistik dan laporan terbaru yang ditugaskan untuk Anda.
-                </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+                <div className="space-y-1">
+                    <CardTitle>Statistik Laporan per Status</CardTitle>
+                    <CardDescription>
+                        Pantau statistik dan laporan terbaru yang ditugaskan untuk Anda ({getRangeLabel()}).
+                    </CardDescription>
+                </div>
+                <Select value={range} onValueChange={setRange}>
+                    <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Pilih Periode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="weekly">Mingguan</SelectItem>
+                        <SelectItem value="monthly">Bulanan</SelectItem>
+                        <SelectItem value="yearly">Tahunan</SelectItem>
+                    </SelectContent>
+                </Select>
             </CardHeader>
             <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                        <XAxis
-                            dataKey="name"
-                            stroke="#888888"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                        />
-                        <YAxis
-                            stroke="#888888"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(value) => `${value}`}
-                        />
-                        <Tooltip
-                            cursor={{ fill: "transparent" }}
-                            contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))" }}
-                        />
-                        <Legend iconType="circle" />
-                        <Bar dataKey="selesai" name="Selesai" fill="#10b981" radius={[4, 4, 0, 0]} barSize={12} />
-                        <Bar dataKey="dalam_proses" name="Dalam Proses" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
-                        <Bar dataKey="belum_terjawab" name="Belum Terjawab" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={12} />
-                    </BarChart>
+                    {isLoading ? (
+                        <div className="flex h-full items-center justify-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                    ) : (
+                        <BarChart data={data}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                            <XAxis
+                                dataKey="name"
+                                stroke="#888888"
+                                fontSize={12}
+                                tickLine={false}
+                                axisLine={false}
+                            />
+                            <YAxis
+                                stroke="#888888"
+                                fontSize={12}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(value) => `${value}`}
+                            />
+                            <Tooltip
+                                cursor={{ fill: "transparent" }}
+                                contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))" }}
+                            />
+                            <Legend iconType="circle" />
+                            <Bar dataKey="selesai" name="Selesai" fill="#10b981" radius={[4, 4, 0, 0]} barSize={12} />
+                            <Bar dataKey="dalam_proses" name="Dalam Proses" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
+                            <Bar dataKey="belum_terjawab" name="Belum Terjawab" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={12} />
+                        </BarChart>
+                    )}
                 </ResponsiveContainer>
             </CardContent>
         </Card>
