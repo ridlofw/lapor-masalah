@@ -1,94 +1,188 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, MapPin, ThumbsUp, Calendar, Clock } from "lucide-react"
+import { ArrowLeft, MapPin, ThumbsUp, Calendar, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { ReportTimeline } from "@/components/report/ReportTimeline"
 import { BudgetTransparency } from "@/components/report/BudgetTransparency"
 import Image from "next/image"
 import { ZoomableImage } from "@/components/ui/zoomable-image"
+import { Report, ReportCategory, ReportStatus } from "@/lib/types"
+import { getCategoryIcon } from "@/lib/utils"
 
 const LocationPicker = dynamic(() => import("@/components/map/LocationPicker"), {
     ssr: false,
     loading: () => <div className="h-[300px] w-full bg-muted animate-pulse flex items-center justify-center">Loading Map...</div>
 })
 
-// Mock Data for a specific progress report
-const reportData = {
-    id: "7285",
-    date: "14 Agustus 2024",
-    status: "Dalam Progress",
-    description: "Perbaikan jalan berlubang di Jalan A. Yani sedang dalam tahap pengerjaan lapis pondasi agregat. Alat berat sudah dikerahkan ke lokasi.",
-    images: [
-        "https://images.unsplash.com/photo-1546768292-fb12f6c92568?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-        "https://images.unsplash.com/photo-1621939514649-28b12e81658e?q=80&w=2070&auto=format&fit=crop"
-    ],
-    category: "Jalan",
-    location: "Jl. A. Yani, Kec. Cempaka Putih, Jakarta Pusat",
-    coordinates: { lat: -6.175392, lng: 106.827153 },
-    reporter: "Siti Aminah",
-    supportCount: 156,
-    budget: {
-        total: "Rp 200.000.000",
-        used: "Rp 85.000.000",
-        percentage: 42.5
-    },
-    timeline: [
-        {
-            date: "17 Agu 2024",
-            title: "Pengerjaan Lapis Pondasi",
-            description: "Tim teknis sedang melakukan pemadatan lapisan pondasi jalan. Material batu pecah telah dihamparkan dan dipadatkan menggunakan vibro roller.",
-            status: "in_progress" as const,
-            budgetUsed: "Penggunaan Anggaran: Rp 35.000.000 (Pembelian Batu Pecah & Sewa Alat Berat)",
-            images: [
-                "https://images.unsplash.com/photo-1590497576628-9b884d41fa21?q=80&w=2074&auto=format&fit=crop", // Heavy machinery
-                "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2070&auto=format&fit=crop"  // Construction work
-            ]
-        },
-        {
-            date: "16 Agu 2024",
-            title: "Pembelian Material",
-            description: "Material batu pecah, pasir, dan aspal telah dibeli dan dikirim ke lokasi proyek. Bukti penerimaan barang terlampir.",
-            status: "completed" as const,
-            budgetUsed: "Penggunaan Anggaran: Rp 50.000.000 (Material Utama)",
-            images: [
-                "https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?q=80&w=2019&auto=format&fit=crop", // Raw material
-                "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=2070&auto=format&fit=crop"  // Stacks of material
-            ]
-        },
-        {
-            date: "15 Agu 2024",
-            title: "Dinas Melakukan Verifikasi Lapangan",
-            description: "Tim survei Dinas PUPR telah meninjau lokasi untuk menghitung kebutuhan material dan estimasi anggaran. Anggaran disetujui.",
-            status: "completed" as const,
-            images: [
-                "https://images.unsplash.com/photo-1599695696803-c37617478082?q=80&w=2070&auto=format&fit=crop" // Surveying
-            ]
-        },
-        {
-            date: "14 Agu 2024",
-            title: "Laporan Didisposisikan ke Dinas PUPR",
-            description: "Admin telah memverifikasi laporan dan meneruskan ke Dinas Pekerjaan Umum untuk ditindaklanjuti.",
-            status: "completed" as const
-        },
-        {
-            date: "14 Agu 2024",
-            title: "Laporan Masuk",
-            description: "Laporan baru diterima sistem dan menunggu verifikasi admin.",
-            status: "completed" as const
-        }
-    ]
-}
+const getActorLabel = (actor: any) => {
+    if (!actor) return 'Sistem';
+    if (actor.role === 'ADMIN') return 'Admin Pemerintahan';
+    if (actor.role === 'USER') return '';
+    if (actor.role === 'DINAS') {
+        const name = actor.name.toLowerCase();
+        if (name.includes('pekerjaan umum') || name.includes('pupr')) return 'Dinas PUPR';
+        if (name.includes('energi') || name.includes('esdm')) return 'Dinas ESDM';
+        if (name.includes('pendidikan')) return 'Dinas Pendidikan';
+        if (name.includes('kesehatan')) return 'Dinas Kesehatan';
+        return actor.name;
+    }
+    return actor.name;
+};
+
+const getDinasName = (originalName: string) => {
+    const name = originalName.toLowerCase();
+    if (name.includes('pekerjaan umum') || name.includes('pupr')) return 'Dinas PUPR';
+    if (name.includes('energi') || name.includes('esdm')) return 'Dinas ESDM';
+    if (name.includes('pendidikan')) return 'Dinas Pendidikan';
+    if (name.includes('kesehatan')) return 'Dinas Kesehatan';
+    return originalName;
+};
 
 export default function ProgressReportDetailPage() {
     const params = useParams()
     const id = params.id as string
     const [activeImageIndex, setActiveImageIndex] = useState(0)
+
+    const [report, setReport] = useState<Report | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchReport = async () => {
+            try {
+                const res = await fetch(`/api/reports/${id}`);
+                if (!res.ok) {
+                    setIsLoading(false);
+                    return;
+                }
+                const data = await res.json();
+                const apiReport = data.report;
+
+                // Map API data to Report interface
+                const mappedReport: Report = {
+                    id: apiReport.id,
+                    title: `Laporan ${apiReport.category}`,
+                    category: (apiReport.category.charAt(0).toUpperCase() + apiReport.category.slice(1).toLowerCase()) as ReportCategory,
+                    date: new Date(apiReport.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                    location: apiReport.locationText,
+                    fullAddress: apiReport.locationText,
+                    status: mapStatus(apiReport.status),
+                    statusColor: getStatusColor(apiReport.status),
+                    icon: getCategoryIcon((apiReport.category.charAt(0).toUpperCase() + apiReport.category.slice(1).toLowerCase()) as ReportCategory),
+                    description: apiReport.description,
+                    // Filter out completion images from main gallery
+                    image: (apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url && apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url !== "https://images.unsplash.com/photo-1546768292-fb12f6c92568?q=80&w=1350") ? apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url : "/images/no-image-placeholder.png",
+                    additionalImages: apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN').slice(1).map((img: any) => img.url),
+                    supportCount: apiReport.supportCount || 0,
+                    reporter: apiReport.reporter.name,
+                    coordinates: { lat: apiReport.latitude, lng: apiReport.longitude },
+                    rejectionReason: apiReport.rejectionReason,
+                    budget: apiReport.budget ? {
+                        total: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(apiReport.budget.total)),
+                        used: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(apiReport.budget.used)),
+                        percentage: apiReport.budget.percentage
+                    } : undefined,
+                    timeline: [
+                        ...apiReport.timeline
+                            .filter((t: any) => t.eventType !== "PROGRESS_UPDATE")
+                            .map((t: any) => {
+                                const actorLabel = getActorLabel(t.actor);
+                                return {
+                                    dateRaw: new Date(t.createdAt),
+                                    date: new Date(t.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                                    title: actorLabel ? `${actorLabel}: ${t.title}` : t.title,
+                                    description: t.description,
+                                    status: "completed",
+                                    // Inject completion images for COMPLETED event
+                                    images: t.eventType === 'COMPLETED'
+                                        ? apiReport.images.filter((img: any) => img.type === 'PENYELESAIAN').map((img: any) => img.url)
+                                        : [],
+                                    budgetUsed: t.budgetUsed > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(t.budgetUsed) : undefined
+                                };
+                            }),
+                        ...apiReport.progress.map((p: any) => ({
+                            dateRaw: new Date(p.createdAt),
+                            date: new Date(p.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                            title: `${getDinasName(apiReport.dinas?.name || 'Dinas')}: Update Progress`,
+                            description: p.description,
+                            status: "completed",
+                            images: p.images || [],
+                            budgetUsed: p.budgetUsed > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p.budgetUsed) : undefined
+                        }))
+                    ].sort((a, b) => b.dateRaw.getTime() - a.dateRaw.getTime())
+                        .map(({ dateRaw, ...item }) => item)
+                };
+
+                setReport(mappedReport);
+            } catch (error) {
+                console.error("Failed to fetch report:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchReport();
+        }
+    }, [id]);
+
+    const mapStatus = (status: string): ReportStatus => {
+        switch (status) {
+            case "SELESAI": return "Selesai";
+            case "DITOLAK":
+            case "DITOLAK_DINAS": return "Ditolak";
+            case "MENUNGGU_VERIFIKASI": return "Menunggu";
+            case "DALAM_PENGERJAAN": return "Diproses"; // Correct mapping for "Dalam Progress"
+            case "DIDISPOSISIKAN": return "Diproses";
+            case "DIVERIFIKASI_DINAS": return "Diproses";
+            default: return "Diproses";
+        }
+    }
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case "SELESAI": return "bg-green-100 text-green-700 border-green-200";
+            case "DITOLAK":
+            case "DITOLAK_DINAS": return "bg-red-100 text-red-700 border-red-200";
+            case "MENUNGGU_VERIFIKASI": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+            default: return "bg-blue-100 text-blue-700 border-blue-200";
+        }
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[80vh] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
+    if (!report) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <Link href="/admin/laporan/progress">
+                        <Button variant="ghost" size="icon">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    </Link>
+                    <h2 className="text-2xl font-bold tracking-tight">Laporan Tidak Ditemukan</h2>
+                </div>
+                <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <p className="text-gray-500">Data laporan dengan ID tersebut tidak ditemukan.</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Construct images array
+    const images = [report.image, ...(report.additionalImages || [])].filter(Boolean);
+    const defaultCoordinates = { lat: -6.2088, lng: 106.8456 };
 
     return (
         <div className="space-y-6">
@@ -99,7 +193,7 @@ export default function ProgressReportDetailPage() {
                     </Button>
                 </Link>
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Detail Laporan #{id}</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">Detail Laporan #{id.slice(0, 8)}</h2>
                     <p className="text-muted-foreground">
                         Pantau perkembangan penanganan laporan masyarakat.
                     </p>
@@ -111,19 +205,24 @@ export default function ProgressReportDetailPage() {
                 <div className="lg:col-span-2 space-y-6">
                     <Card className="overflow-hidden border-border/60 shadow-sm p-0 gap-0">
                         {/* Main Image */}
-                        {/* Main Image */}
                         <div className="relative h-[400px] w-full bg-muted">
-                            <ZoomableImage
-                                src={reportData.images[activeImageIndex]}
-                                alt={`Report Image ${activeImageIndex + 1}`}
-                                className="w-full h-full"
-                            />
+                            {images.length > 0 ? (
+                                <ZoomableImage
+                                    src={images[activeImageIndex]}
+                                    alt={`Report Image ${activeImageIndex + 1}`}
+                                    className="w-full h-full"
+                                />
+                            ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400">
+                                    No Image
+                                </div>
+                            )}
                         </div>
 
                         {/* Thumbnails */}
-                        {reportData.images.length > 1 && (
+                        {images.length > 1 && (
                             <div className="flex gap-2 p-4 overflow-x-auto border-b">
-                                {reportData.images.map((img, index) => (
+                                {images.map((img: string, index: number) => (
                                     <button
                                         key={index}
                                         onClick={() => setActiveImageIndex(index)}
@@ -140,15 +239,15 @@ export default function ProgressReportDetailPage() {
                             <div className="flex items-center justify-between mb-4">
                                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                                     <Calendar className="h-4 w-4" />
-                                    Dilaporkan pada {reportData.date}
+                                    Dilaporkan pada {report.date}
                                 </p>
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200">
-                                    {reportData.status}
+                                <Badge variant="secondary" className={`${report.statusColor}`}>
+                                    {report.status}
                                 </Badge>
                             </div>
                             <h3 className="text-lg font-semibold mb-2 text-foreground">Deskripsi Laporan</h3>
                             <p className="text-muted-foreground leading-relaxed">
-                                {reportData.description}
+                                {report.description}
                             </p>
                         </CardContent>
                     </Card>
@@ -161,10 +260,10 @@ export default function ProgressReportDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <p className="font-medium text-sm text-foreground">{reportData.location}</p>
+                            <p className="font-medium text-sm text-foreground">{report.location}</p>
                             <div className="h-[300px] w-full rounded-lg overflow-hidden border relative z-0">
                                 <LocationPicker
-                                    center={reportData.coordinates}
+                                    center={report.coordinates || defaultCoordinates}
                                     onLocationSelect={() => { }} // Read-only
                                 />
                             </div>
@@ -179,11 +278,11 @@ export default function ProgressReportDetailPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs text-muted-foreground mb-1">Kategori</p>
-                                    <p className="font-medium text-sm">{reportData.category}</p>
+                                    <p className="font-medium text-sm">{report.category}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground mb-1">Pelapor</p>
-                                    <p className="font-medium text-sm">{reportData.reporter}</p>
+                                    <p className="font-medium text-sm">{report.reporter}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -200,7 +299,7 @@ export default function ProgressReportDetailPage() {
                                     <p className="text-sm font-medium text-slate-500">Total Dukungan</p>
                                     <div className="flex items-baseline gap-2 mt-2">
                                         <span className="text-4xl font-bold tracking-tight text-slate-900">
-                                            {reportData.supportCount}
+                                            {report.supportCount}
                                         </span>
                                         <div className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">
                                             Warga
@@ -218,10 +317,12 @@ export default function ProgressReportDetailPage() {
                     </Card>
 
                     {/* Timeline */}
-                    <ReportTimeline timeline={reportData.timeline} />
+                    <ReportTimeline timeline={report.timeline} />
 
                     {/* Budget */}
-                    <BudgetTransparency budget={reportData.budget} />
+                    {report.budget && (
+                        <BudgetTransparency budget={report.budget} />
+                    )}
                 </div>
             </div>
         </div>
