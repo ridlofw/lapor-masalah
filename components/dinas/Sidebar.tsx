@@ -8,7 +8,9 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SimpleAlertDialog } from "@/components/ui/simple-alert-dialog"
 
-export function Sidebar({ className }: { className?: string }) {
+import { SessionUser } from "@/lib/auth"
+
+export function Sidebar({ className, user }: { className?: string; user?: SessionUser }) {
     const pathname = usePathname()
     const router = useRouter()
     const [isLaporanOpen, setIsLaporanOpen] = useState(pathname.startsWith("/dinas/laporan"))
@@ -23,13 +25,13 @@ export function Sidebar({ className }: { className?: string }) {
         <div className={cn("flex h-full flex-col bg-sidebar text-sidebar-foreground", className)}>
             <div className="p-6">
                 <div className="flex items-center gap-3 mb-8">
-                    <Avatar className="h-10 w-10">
+                    <Avatar className="h-10 w-10 shrink-0">
                         <AvatarImage src="/avatars/02.png" alt="@dinas" />
                         <AvatarFallback>DN</AvatarFallback>
                     </Avatar>
-                    <div className="flex flex-col">
-                        <span className="text-sm font-semibold">Dinas Lapor Masalah</span>
-                        <span className="text-xs text-muted-foreground">dinas@lapormasalah.go.id</span>
+                    <div className="flex flex-col min-w-0 w-full">
+                        <span className="text-xs font-semibold leading-tight break-words">{user?.name.replace("Petugas ", "") || "Dinas Lapor Masalah"}</span>
+                        <span className="text-[10px] text-muted-foreground break-all leading-tight" title={user?.email}>{user?.email || "dinas@lapormasalah.go.id"}</span>
                     </div>
                 </div>
 

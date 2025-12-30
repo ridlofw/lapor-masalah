@@ -6,7 +6,9 @@ import { Sidebar } from "./Sidebar"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 
-export function MobileNav() {
+import { SessionUser } from "@/lib/auth"
+
+export function MobileNav({ user }: { user?: SessionUser }) {
     const [open, setOpen] = useState(false)
 
     return (
@@ -18,7 +20,7 @@ export function MobileNav() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-72">
-                <Sidebar />
+                <Sidebar user={user} />
             </SheetContent>
         </Sheet>
     )
