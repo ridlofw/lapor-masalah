@@ -1,4 +1,4 @@
-"use client"
+
 
 import { Button } from "@/components/ui/button"
 import {
@@ -11,8 +11,16 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { getSession } from "@/lib/auth"
+import { redirect } from "next/navigation"
 
-export default function DinasPengaturanPage() {
+export default async function DinasPengaturanPage() {
+    const session = await getSession("DINAS")
+
+    if (!session) {
+        redirect("/dinas/login")
+    }
+
     return (
         <div className="space-y-6">
             <div>
@@ -34,7 +42,7 @@ export default function DinasPengaturanPage() {
                     <CardContent className="space-y-4">
                         <div className="grid gap-2">
                             <Label htmlFor="name">Nama Dinas</Label>
-                            <Input id="name" defaultValue="Dinas Lapor Masalah" />
+                            <Input id="name" defaultValue={session.name.replace("Petugas ", "")} />
                         </div>
                         <Button>Simpan Perubahan</Button>
                     </CardContent>
