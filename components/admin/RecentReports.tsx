@@ -1,48 +1,113 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-
 import Link from "next/link"
-import { AlertTriangle, MapPin, School, Droplets } from "lucide-react"
+import { AlertTriangle, MapPin, School, Droplets, Zap, HeartPulse, Loader2 } from "lucide-react"
+import { LucideIcon } from "lucide-react"
 
-const recentReports = [
-    {
-        title: "Jalan Rusak di Desa Sukamaju",
-        date: "20 Okt 2023",
-        status: "Belum Diverifikasi",
-        statusColor: "text-rose-500",
-        bgClass: "bg-rose-100/50",
-        icon: AlertTriangle,
-        iconColor: "text-rose-500",
-    },
-    {
-        title: "Jembatan Gantung Rusak",
-        date: "19 Okt 2023",
-        status: "Dalam Progress",
-        statusColor: "text-amber-500",
-        bgClass: "bg-amber-100/50",
-        icon: MapPin, // Just an example icon
-        iconColor: "text-amber-500",
-    },
-    {
-        title: "Perbaikan Atap Sekolah Dasar",
-        date: "19 Okt 2023",
-        status: "Selesai",
-        statusColor: "text-emerald-500",
-        bgClass: "bg-emerald-100/50",
-        icon: School,
-        iconColor: "text-emerald-500",
-    },
-    {
-        title: "Irigasi Sawah Bocor",
-        date: "19 Okt 2023",
-        status: "Selesai",
-        statusColor: "text-emerald-500",
-        bgClass: "bg-emerald-100/50",
-        icon: Droplets,
-        iconColor: "text-emerald-500",
-    },
-]
+interface ReportItem {
+    id: string
+    category: string
+    status: string
+    locationText: string
+    reporter: string
+    createdAt: string
+}
+
+// Helper to get icon and colors based on category and status
+function getReportDisplay(category: string, status: string): {
+    icon: LucideIcon
+    iconColor: string
+    bgClass: string
+    statusColor: string
+    statusText: string
+} {
+    let statusColor = "text-gray-500"
+    let statusText = status
+    let bgClass = "bg-gray-100/50"
+
+    switch (status) {
+        case "MENUNGGU_VERIFIKASI":
+        case "DITOLAK_DINAS":
+            statusColor = "text-rose-500"
+            statusText = status === "DITOLAK_DINAS" ? "Dikembalikan Dinas" : "Belum Diverifikasi"
+            bgClass = "bg-rose-100/50"
+            break
+        case "DIDISPOSISIKAN":
+        case "DIVERIFIKASI_DINAS":
+        case "DALAM_PENGERJAAN":
+            statusColor = "text-amber-500"
+            statusText = "Dalam Progress"
+            bgClass = "bg-amber-100/50"
+            break
+        case "SELESAI":
+            statusColor = "text-emerald-500"
+            statusText = "Selesai"
+            bgClass = "bg-emerald-100/50"
+            break
+        case "DITOLAK":
+            statusColor = "text-red-500"
+            statusText = "Ditolak"
+            bgClass = "bg-red-100/50"
+            break
+    }
+
+    let icon: LucideIcon = MapPin
+    let iconColor = statusColor
+
+    switch (category) {
+        case "JALAN":
+        case "JEMBATAN":
+            icon = AlertTriangle
+            break
+        case "SEKOLAH":
+            icon = School
+            break
+        case "KESEHATAN":
+            icon = HeartPulse
+            break
+        case "AIR":
+            icon = Droplets
+            break
+        case "LISTRIK":
+            icon = Zap
+            break
+    }
+
+    return { icon, iconColor, bgClass, statusColor, statusText }
+}
+
+function formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    })
+}
 
 export function RecentReports() {
+    const [reports, setReports] = useState<ReportItem[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        async function fetchReports() {
+            try {
+                const response = await fetch('/api/admin/stats')
+                if (response.ok) {
+                    const data = await response.json()
+                    setReports(data.recentReports || [])
+                }
+            } catch (error) {
+                console.error("Failed to fetch recent reports:", error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchReports()
+    }, [])
+
     return (
         <Card className="col-span-1">
             <CardHeader>
@@ -50,24 +115,42 @@ export function RecentReports() {
                 <CardDescription>Update status laporan terbaru dari warga.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="space-y-8">
-                    {recentReports.map((report, index) => (
-                        <div key={index} className="flex items-start">
-                            <div className={`mr-4 flex h-9 w-9 items-center justify-center rounded-lg ${report.bgClass} sm:h-10 sm:w-10`}>
-                                <report.icon className={`h-5 w-5 ${report.iconColor}`} />
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium leading-none">{report.title}</p>
-                                <div className="flex items-center pt-2">
-                                    <span className="text-xs text-muted-foreground mr-2">{report.date}</span>
-                                    <span className={`text-xs font-medium ${report.statusColor}`}>
-                                        {report.status}
-                                    </span>
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                ) : reports.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                        Belum ada laporan
+                    </div>
+                ) : (
+                    <div className="space-y-8">
+                        {reports.map((report) => {
+                            const display = getReportDisplay(report.category, report.status)
+                            const Icon = display.icon
+                            return (
+                                <div key={report.id} className="flex items-start">
+                                    <div className={`mr-4 flex h-9 w-9 items-center justify-center rounded-lg ${display.bgClass} sm:h-10 sm:w-10`}>
+                                        <Icon className={`h-5 w-5 ${display.iconColor}`} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-medium leading-none line-clamp-1">
+                                            {report.locationText}
+                                        </p>
+                                        <div className="flex items-center pt-2">
+                                            <span className="text-xs text-muted-foreground mr-2">
+                                                {formatDate(report.createdAt)}
+                                            </span>
+                                            <span className={`text-xs font-medium ${display.statusColor}`}>
+                                                {display.statusText}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                            )
+                        })}
+                    </div>
+                )}
                 <div className="mt-6">
                     <Link href="/admin/laporan/belum-diverifikasi" className="text-sm font-medium text-blue-600 hover:text-blue-500">
                         Lihat semua laporan
