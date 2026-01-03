@@ -115,7 +115,26 @@ export async function GET(request: NextRequest) {
 // POST - Create a new report
 export async function POST(request: NextRequest) {
     try {
-        const session = await getSession("USER");
+        // Try cookie session first (web), then headers (mobile)
+        let session = await getSession("USER");
+
+        // If no cookie session, check for mobile app headers
+        if (!session) {
+            const userId = request.headers.get("X-User-Id");
+            const userEmail = request.headers.get("X-User-Email");
+
+            if (userId && userEmail) {
+                // Verify user exists in database
+                const user = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { id: true, name: true, email: true, role: true },
+                });
+
+                if (user && user.email === userEmail) {
+                    session = user;
+                }
+            }
+        }
 
         if (!session) {
             return NextResponse.json(
