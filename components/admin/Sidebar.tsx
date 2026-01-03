@@ -14,9 +14,16 @@ export function Sidebar({ className }: { className?: string }) {
     const [isLaporanOpen, setIsLaporanOpen] = useState(pathname.startsWith("/admin/laporan"))
     const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
-    const handleLogout = () => {
-        document.cookie = "admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
-        router.push("/admin/login")
+    const handleLogout = async () => {
+        try {
+            await fetch("/api/auth/logout?role=ADMIN", {
+                method: "POST",
+            })
+            router.push("/admin/login")
+            router.refresh()
+        } catch (error) {
+            console.error("Logout failed:", error)
+        }
     }
 
     return (

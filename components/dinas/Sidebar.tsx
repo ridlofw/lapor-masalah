@@ -16,9 +16,16 @@ export function Sidebar({ className, user }: { className?: string; user?: Sessio
     const [isLaporanOpen, setIsLaporanOpen] = useState(pathname.startsWith("/dinas/laporan"))
     const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
-    const handleLogout = () => {
-        document.cookie = "dinas_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
-        router.push("/dinas/login")
+    const handleLogout = async () => {
+        try {
+            await fetch("/api/auth/logout?role=DINAS", {
+                method: "POST",
+            })
+            router.push("/dinas/login")
+            router.refresh()
+        } catch (error) {
+            console.error("Logout failed:", error)
+        }
     }
 
     return (
