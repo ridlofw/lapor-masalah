@@ -68,7 +68,7 @@ export default function ReportDetailPage() {
                     icon: getCategoryIcon((apiReport.category.charAt(0).toUpperCase() + apiReport.category.slice(1).toLowerCase()) as ReportCategory),
                     description: apiReport.description,
                     // Filter out completion images from main gallery
-                    image: (apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url && apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url !== "https://images.unsplash.com/photo-1546768292-fb12f6c92568?q=80&w=1350") ? apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url : "/images/no-image-placeholder.png",
+                    image: (apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url) ? apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url : "/images/no-image-placeholder.png",
                     additionalImages: apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN').slice(1).map((img: any) => img.url),
                     supportCount: apiReport.supportCount || 0,
                     reporter: apiReport.reporter.name,

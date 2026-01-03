@@ -49,7 +49,7 @@ export default function JelajahPage() {
                 const mappedReports = data.reports.map((r: any) => ({
                     id: r.id,
                     title: r.description, // Use user description as title
-                    image: (r.image && r.image !== "https://images.unsplash.com/photo-1546768292-fb12f6c92568?q=80&w=1350") ? r.image : "/images/no-image-placeholder.png",
+                    image: r.image ? r.image : "/images/no-image-placeholder.png",
                     location: r.locationText,
                     category: r.category,
                     description: r.description,

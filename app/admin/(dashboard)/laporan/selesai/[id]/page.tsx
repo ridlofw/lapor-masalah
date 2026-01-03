@@ -2,9 +2,9 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, MapPin, ThumbsUp, Calendar, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { ArrowLeft, MapPin, ThumbsUp, Calendar, CheckCircle2, AlertCircle, Loader2, Trash2 } from "lucide-react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { ReportTimeline } from "@/components/report/ReportTimeline"
@@ -14,6 +14,8 @@ import Image from "next/image"
 import { ZoomableImage } from "@/components/ui/zoomable-image"
 import { Report, ReportCategory, ReportStatus } from "@/lib/types"
 import { getCategoryIcon } from "@/lib/utils"
+import { SimpleAlertDialog } from "@/components/ui/simple-alert-dialog"
+
 
 const LocationPicker = dynamic(() => import("@/components/map/LocationPicker"), {
     ssr: false,
@@ -46,11 +48,14 @@ const getDinasName = (originalName: string) => {
 
 export default function CompletedReportDetailPage() {
     const params = useParams()
+    const router = useRouter()
     const id = params.id as string
     const [activeImageIndex, setActiveImageIndex] = useState(0)
 
     const [report, setReport] = useState<Report | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     useEffect(() => {
         const fetchReport = async () => {
@@ -76,7 +81,7 @@ export default function CompletedReportDetailPage() {
                     icon: getCategoryIcon((apiReport.category.charAt(0).toUpperCase() + apiReport.category.slice(1).toLowerCase()) as ReportCategory),
                     description: apiReport.description,
                     // Filter out completion images from main gallery
-                    image: (apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url && apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url !== "https://images.unsplash.com/photo-1546768292-fb12f6c92568?q=80&w=1350") ? apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url : "/images/no-image-placeholder.png",
+                    image: (apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url) ? apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN')[0]?.url : "/images/no-image-placeholder.png",
                     additionalImages: apiReport.images.filter((img: any) => img.type !== 'PENYELESAIAN').slice(1).map((img: any) => img.url),
                     supportCount: apiReport.supportCount || 0,
                     reporter: apiReport.reporter.name,
@@ -150,6 +155,27 @@ export default function CompletedReportDetailPage() {
         }
     }
 
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        try {
+            const res = await fetch(`/api/admin/reports/${id}`, {
+                method: "DELETE",
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Gagal menghapus laporan");
+            }
+
+            router.push("/admin/laporan/selesai");
+        } catch (error) {
+            console.error("Failed to delete report:", error);
+            alert(error instanceof Error ? error.message : "Gagal menghapus laporan");
+        } finally {
+            setIsDeleting(false);
+        }
+    }
+
     if (isLoading) {
         return (
             <div className="flex h-[80vh] items-center justify-center">
@@ -185,19 +211,45 @@ export default function CompletedReportDetailPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Link href="/admin/laporan/selesai">
-                    <Button variant="ghost" size="icon">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                </Link>
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Detail Laporan #{id.slice(0, 8)}</h2>
-                    <p className="text-muted-foreground">
-                        {isRejected ? "Detail laporan yang ditolak." : "Arsip laporan yang telah selesai ditangani."}
-                    </p>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Link href="/admin/laporan/selesai">
+                        <Button variant="ghost" size="icon">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight">Detail Laporan #{id.slice(0, 8)}</h2>
+                        <p className="text-muted-foreground">
+                            {isRejected ? "Detail laporan yang ditolak." : "Arsip laporan yang telah selesai ditangani."}
+                        </p>
+                    </div>
                 </div>
+                <Button
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                    disabled={isDeleting}
+                    className="gap-2"
+                >
+                    {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Trash2 className="h-4 w-4" />
+                    )}
+                    Hapus Laporan
+                </Button>
             </div>
+
+            <SimpleAlertDialog
+                open={showDeleteDialog}
+                onOpenChange={setShowDeleteDialog}
+                title="Hapus Laporan"
+                description="Apakah Anda yakin ingin menghapus laporan ini secara permanen? Tindakan ini tidak dapat dibatalkan."
+                confirmText={isDeleting ? "Menghapus..." : "Hapus"}
+                cancelText="Batal"
+                variant="destructive"
+                onConfirm={handleDelete}
+            />
 
             {/* Status Banners */}
             {isRejected && (

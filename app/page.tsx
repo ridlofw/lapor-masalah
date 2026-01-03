@@ -69,7 +69,7 @@ export default function LandingPage() {
                     const mappedReports = reportsData.reports.slice(0, 3).map((r: any) => ({
                         id: r.id,
                         title: r.description,
-                        image: (r.image && r.image !== "https://images.unsplash.com/photo-1546768292-fb12f6c92568?q=80&w=1350") ? r.image : "/images/no-image-placeholder.png",
+                        image: r.image ? r.image : "/images/no-image-placeholder.png",
                         location: r.locationText,
                         category: r.category,
                         description: r.description,
@@ -232,6 +232,71 @@ export default function LandingPage() {
                             <p className="text-gray-500 leading-relaxed">
                                 Pantau progress pengerjaan hingga masalah selesai diperbaiki.
                             </p>
+                        </div>
+                    </div>
+
+                    {/* SMS Reporting Section */}
+                    <div className="mt-20 bg-blue-50 rounded-3xl p-8 md:p-12 border border-blue-100">
+                        <div className="flex flex-col md:flex-row gap-12 items-center">
+                            <div className="flex-1 space-y-6">
+                                <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-700 text-sm font-medium border border-blue-200">
+                                    Tanpa Internet?
+                                </span>
+                                <h3 className="text-3xl font-bold text-[#1e293b]">Lapor via SMS</h3>
+                                <p className="text-gray-600 text-lg leading-relaxed">
+                                    Tidak punya kuota? Tenang, Anda tetap bisa melaporkan masalah di sekitar Anda melalui layanan SMS Center kami.
+                                </p>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-sm">1</div>
+                                        <div>
+                                            <p className="font-semibold text-gray-900 mb-1">Ketik Format SMS</p>
+                                            <code className="bg-white px-3 py-2 rounded-lg border border-gray-200 text-blue-700 font-mono text-sm block w-fit">
+                                                LAPOR#KATEGORI#LOKASI#DESKRIPSI
+                                            </code>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-sm">2</div>
+                                        <div>
+                                            <p className="font-semibold text-gray-900 mb-1">Pilih Kategori</p>
+                                            <p className="text-sm text-gray-600">
+                                                JALAN, JEMBATAN, SEKOLAH, KESEHATAN, AIR, LISTRIK
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-sm">3</div>
+                                        <div>
+                                            <p className="font-semibold text-gray-900 mb-1">Kirim SMS</p>
+                                            <p className="text-gray-600">
+                                                Kirim ke <span className="font-bold text-gray-900">0895-4229-04898</span> (SMS Center)
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 w-full max-w-md">
+                                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between border-b pb-4">
+                                            <div className="font-bold text-gray-900">Contoh SMS</div>
+                                            <div className="text-xs text-gray-400">Pesan Baru</div>
+                                        </div>
+                                        <div className="bg-gray-50 p-4 rounded-xl text-gray-600 font-mono text-sm leading-relaxed">
+                                            LAPOR#JALAN#Jl. Sudirman No 10#Jalan berlubang cukup dalam sudah 1 minggu
+                                        </div>
+                                        <div className="flex justify-end">
+                                            <div className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                                                Kirim
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
