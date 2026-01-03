@@ -231,7 +231,7 @@ export default function ReportDetailPage() {
 
     const images = report.images.length > 0
         ? report.images.map(img => img.url)
-        : ["https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?q=80&w=2070"]
+        : ["/images/no-image-placeholder.png"]
 
     return (
         <div className="space-y-6">
