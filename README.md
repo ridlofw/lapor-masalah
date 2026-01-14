@@ -199,19 +199,6 @@ npm run db:push
 npm run db:seed
 ```
 
-### 🔑 Akun Default (Setelah Seed)
-
-| Role | Email | Password |
-|------|-------|----------|
-| **Admin** | `admin@lapormasalah.go.id` | `admin` |
-| **Dinas PUPR** | `dinaspupr@lapormasalah.go.id` | `dinas` |
-| **Dinas Pendidikan** | `dinaspendidikan@lapormasalah.go.id` | `dinas` |
-| **Dinas Kesehatan** | `dinaskesehatan@lapormasalah.go.id` | `dinas` |
-| **Dinas ESDM** | `dinasesdm@lapormasalah.go.id` | `dinas` |
-| **User (Warga)** | `warga@example.com` | `user123` |
-
----
-
 ## 📚 Dokumentasi API
 
 ### 🔐 Authentication
@@ -487,7 +474,7 @@ Proyek ini dilisensikan di bawah MIT License.
 
 <div align="center">
 
-**Made with ❤️ by Ridlo FW**
+**Made with ❤️ by Lapor Masalah Team**
 
 [⬆ Kembali ke atas](#-lapor-masalah)
 
