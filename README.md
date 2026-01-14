@@ -13,8 +13,6 @@
 *Sampaikan aspirasi dan laporan masalah infrastruktur di lingkungan Anda.*
 *Kami pastikan setiap laporan didengar dan ditindaklanjuti.*
 
-[🚀 Demo](#demo) • [📖 Dokumentasi](#dokumentasi) • [🛠️ Instalasi](#instalasi) • [📱 Mobile App](#aplikasi-mobile)
-
 </div>
 
 ---
@@ -475,7 +473,5 @@ Proyek ini dilisensikan di bawah MIT License.
 <div align="center">
 
 **Made with ❤️ by Lapor Masalah Team**
-
-[⬆ Kembali ke atas](#-lapor-masalah)
 
 </div>
