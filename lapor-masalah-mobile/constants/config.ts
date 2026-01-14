@@ -7,9 +7,10 @@
 
 // For production: Use your deployed website URL
 // Example: "https://lapor-masalah.vercel.app"
+export const API_URL = "https://lapor-masalah.vercel.app";
 
 // DEVELOPMENT MODE
-export const API_URL = "http://192.168.1.29:3000";
+// export const API_URL = "http://192.168.1.20:3000";
 
 // Uncomment this for production:
 // export const API_URL = "https://your-deployed-website.vercel.app";
